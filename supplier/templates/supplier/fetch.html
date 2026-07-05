@@ -1,0 +1,55 @@
+{% load static %}
+{% load custom_filters %}
+
+{% for s in page_obj %}
+<tr>
+    <!-- Supplier -->
+    <td>
+    <div class="cell-profile">
+        <div class="avatar blue">
+        {{ s.name|first|upper }}
+        </div>
+        <div class="info-stacked">
+        <div class="info-primary">{{ s.name }}</div>
+        <div class="info-secondary">ID #{{ s.pk }}</div>
+        </div>
+    </div>
+    </td>
+    <!-- Contact Person -->
+    <td class="info-secondary">{{ s.contact_person|default:"-" }}</td>
+    <!-- Email -->
+    <td class="info-secondary">{{ s.email|default:"-" }}</td>
+    <!-- Phone -->
+    <td class="td-mono">{{ s.phone|phone_number|default:"-" }}</td>
+    <!-- Address -->
+    <td class="info-secondary">{{ s.address|default:"-"|truncatewords:10 }}</td>
+    <!-- Created -->
+    <td class="info-secondary">
+    {{ s.created_at|date:"M d, Y" }}
+    </td>
+    <!-- Actions -->
+    <td>
+    <div class="action-buttons">
+        {% if perms.supplier.view_supplier %}
+        <a href="{% url 'supplier:detail' s.pk %}" class="action-btn" title="View Details">
+        <i data-icon="eye"></i>
+        </a>
+        {% endif %}
+        {% if perms.supplier.change_supplier %}
+        <a href="{% url 'supplier:edit' s.pk %}" class="action-btn edit" title="Edit">
+        <i data-icon="edit"></i>
+        </a>
+        {% endif %}
+        {% if perms.supplier.delete_supplier %}
+        <a href="{% url 'supplier:delete' s.pk %}" class="action-btn delete" title="Delete">
+        <i data-icon="trash"></i>
+        </a>
+        {% endif %}
+    </div>
+    </td>
+</tr>
+{% empty %}
+<tr>
+    <td colspan="7" class="info-secondary text-center">No suppliers found.</td>
+</tr>
+{% endfor %}

@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}Users{% endblock %}
+
+{% block content %}
+<!-- Page header -->
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Users</h1>
+    <p class="page-sub">Manage user accounts</p>
+  </div>
+  <div class="breadcrumb">
+    Dashboard <i data-icon="chevronRight"></i> <span>Users</span>
+  </div>
+</div>
+
+<!-- Content -->
+<div class="content">
+
+  <!-- ══ USERS ══ -->
+  <div class="page active" id="page-users">
+    <form class="page-actions" id="user-search-form" onsubmit="return false;">
+      <div class="filters-row">
+        <div class="search-box search-box-wide">
+          <i data-icon="search"></i>
+          <input type="search" name="q" placeholder="Search users…" autofocus autocomplete="off"/>
+        </div>
+        <button type="submit" class="btn btn-primary" onclick="reloadTable('user-table')">
+          <i data-icon="search"></i>
+          Search
+        </button>
+      </div>
+      {% if perms.user.add_customuser %}
+      <a href="{% url 'user:add' %}" class="btn btn-primary">
+        <i data-icon="plus"></i>
+        Add User
+      </a>
+      {% endif %}
+    </form>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">User Records</div>
+        <span class="info-secondary">{{ users_count }} users registered</span>
+      </div>
+      <div class="table-wrap">
+        <table id="user-table">
+          <thead>
+            <tr>
+              <th data-sort="first_name">User</th>
+              <th data-sort="phone_number">Phone</th>
+              <th>Email</th>
+              <th>Store</th>
+              <th>Status</th>
+              <th data-sort="date_joined">Joined</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="user-table-body">
+            <!-- Data loaded via AJAX (fetchData.js) -->
+            <tr>
+                <td colspan="7" class="text-center loading-cell">
+                    <div class="loading">
+                        <i class="fas fa-spinner fa-spin"></i> Loading...
+                    </div>
+                </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <!-- Pagination Container -->
+      <div id="user-table_pagination"></div>
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        initTableAjax(
+            'user-search-form', 
+            'user-table', 
+            '{% url "user:fetch" %}', 
+            {
+                method: 'GET',
+                debounceDelay: 400,
+                placeholder: 'Loading users...'
+            }
+        );
+        initTableSorting('user-table');
+    });
+</script>
+{% endblock extra_js %}

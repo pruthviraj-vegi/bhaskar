@@ -1,0 +1,429 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<!-- Page header -->
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Invoice Dashboard</h1>
+    <p class="page-sub" id="dashboard-subtitle">Overview of invoice performance — This Month</p>
+  </div>
+  <div class="page-header-controls">
+    <div class="breadcrumb breadcrumb--flush">
+      AeroSeva <i data-icon="chevronRight"></i> <span>Invoice Dashboard</span>
+    </div>
+    <select id="dashboard-date-filter" class="filter-select filter-select--dash">
+      <option value="this_month" selected>This Month</option>
+      <option value="last_month">Last Month</option>
+      <option value="today">Today</option>
+      <option value="yesterday">Yesterday</option>
+      <option value="this_quarter">This Quarter</option>
+      <option value="last_quarter">Last Quarter</option>
+      <option value="this_finance">This Finance Year</option>
+      <option value="all">All Time</option>
+    </select>
+  </div>
+</div>
+
+<!-- Content -->
+<div class="content" id="dashboard-content">
+  <div class="page active" id="page-invoice-dashboard">
+
+    <!-- ── KPI CARDS ── -->
+    <div class="kpi-grid">
+      <div class="kpi-card green">
+        <div class="kpi-content">
+          <div class="kpi-label">Total Invoices</div>
+          <div class="kpi-value" id="kpi-total-invoices"><span class="skeleton-text">--</span></div>
+        </div>
+        <div class="kpi-right">
+          <div class="kpi-icon"><i data-icon="invoice"></i></div>
+        </div>
+      </div>
+
+      <div class="kpi-card blue">
+        <div class="kpi-content">
+          <div class="kpi-label">Total Amount</div>
+          <div class="kpi-value" id="kpi-total-amount"><span class="skeleton-text">--</span></div>
+        </div>
+        <div class="kpi-right">
+          <div class="kpi-icon"><i data-icon="revenue"></i></div>
+        </div>
+      </div>
+
+      <div class="kpi-card green">
+        <div class="kpi-content">
+          <div class="kpi-label">Net Amount</div>
+          <div class="kpi-value" id="kpi-net-amount"><span class="skeleton-text">--</span></div>
+        </div>
+        <div class="kpi-right">
+          <div class="kpi-icon"><i data-icon="wallet"></i></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── CHARTS ── -->
+    <div class="chart-grid">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Monthly Invoice Trend</div>
+            <div class="card-sub">Invoice count and amount over last 6 months</div>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="chart-wrap"><canvas id="monthlyTrendChart"></canvas></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Payment Mode Breakdown</div>
+            <div class="card-sub">Distribution by payment method</div>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="chart-wrap"><canvas id="paymentModeChart"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── RECENT INVOICES ── -->
+    <div class="card card--mt">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Recent Invoices</div>
+          <div class="card-sub">Latest invoice transactions</div>
+        </div>
+      </div>
+      <div class="card-body card-body--flush">
+        <div class="table-wrap">
+          <table id="recent-invoices-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Customer</th>
+                <th>Type</th>
+                <th>Payment</th>
+                <th>Amount</th>
+                <th>Discount</th>
+                <th>Advance</th>
+                <th>Final</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody id="recent-invoices-body">
+              <tr>
+                <td colspan="9" class="text-center loading-cell">
+                  <div class="loading">Loading…</div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+
+  const cs = getComputedStyle(document.documentElement);
+  const getVar = v => cs.getPropertyValue(v).trim();
+  const gridColor = getVar('--border') || '#eeeeee';
+  const textColor = getVar('--text3') || '#aaaaaa';
+
+  Chart.defaults.font.family = "'Instrument Sans', sans-serif";
+  Chart.defaults.color = textColor;
+
+  let monthlyTrendChart = null;
+  let paymentModeChart = null;
+  let monthlyTrendWrap = null;
+  let paymentModeWrap = null;
+  let activeFetch = null;
+
+  // Cache wrap elements on first load
+  function initChartWraps() {
+    if (!monthlyTrendWrap) monthlyTrendWrap = document.querySelector('#monthlyTrendChart')?.parentElement;
+    if (!paymentModeWrap) paymentModeWrap = document.querySelector('#paymentModeChart')?.parentElement;
+  }
+
+  function formatCurrency(val) {
+    if (val == null) return '0';
+    return '' + Number(val).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  }
+
+  function populateKPIs(kpis) {
+    const map = {
+      'kpi-total-invoices': kpis.total_invoices,
+      'kpi-total-amount': kpis.total_amount,
+      'kpi-net-amount': kpis.net_amount,
+    };
+    for (const [id, val] of Object.entries(map)) {
+      const el = document.getElementById(id);
+      if (el) {
+        el.innerHTML = typeof val === 'number' ? formatCurrency(val) : val;
+        el.classList.add('dash-fade-in');
+      }
+    }
+    const netEl = document.getElementById('kpi-net-amount');
+    if (netEl) netEl.style.color = kpis.net_amount >= 0 ? 'var(--green)' : 'var(--red)';
+  }
+
+  function buildMonthlyTrendChart(data) {
+    initChartWraps();
+    const wrap = monthlyTrendWrap;
+
+    if (!data || data.length === 0) {
+      if (wrap) wrap.innerHTML = '<div class="text-center text-muted" style="padding:40px">No data for selected period</div>';
+      return;
+    }
+
+    if (monthlyTrendChart) monthlyTrendChart.destroy();
+    if (!wrap) return;
+
+    // Restore canvas if previously cleared
+    if (!document.getElementById('monthlyTrendChart')) {
+      wrap.innerHTML = '<canvas id="monthlyTrendChart"></canvas>';
+    }
+    const ctx = document.getElementById('monthlyTrendChart');
+
+    const labels = data.map(d => d.month);
+    const counts = data.map(d => d.count);
+    const totals = data.map(d => d.total);
+
+    monthlyTrendChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Invoice Count',
+          data: counts,
+          backgroundColor: getVar('--blue') + '88',
+          borderColor: getVar('--blue'),
+          borderWidth: 1.5,
+          borderRadius: 4,
+          borderSkipped: false,
+          yAxisID: 'y',
+        }, {
+          label: 'Total Amount',
+          data: totals,
+          type: 'line',
+          borderColor: getVar('--green'),
+          backgroundColor: getVar('--green') + '22',
+          borderWidth: 2,
+          pointRadius: 4,
+          pointBackgroundColor: getVar('--green'),
+          yAxisID: 'y1',
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top',
+            labels: { usePointStyle: true, pointStyle: 'rectRounded', padding: 16, font: { size: 11.5 } }
+          },
+          tooltip: {
+            backgroundColor: getVar('--surface') || '#2d2d2d',
+            titleColor: getVar('--text') || '#fff',
+            bodyColor: getVar('--text2') || '#ccc',
+            borderColor: gridColor,
+            borderWidth: 1, padding: 10, cornerRadius: 6,
+            callbacks: {
+              label: ctx => {
+                if (ctx.dataset.label === 'Total Amount') {
+                  return ' ' + ctx.dataset.label + ': ' + formatCurrency(ctx.parsed.y);
+                }
+                return ' ' + ctx.dataset.label + ': ' + ctx.parsed.y;
+              }
+            }
+          }
+        },
+        scales: {
+          x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+          y: {
+            type: 'linear',
+            position: 'left',
+            grid: { color: gridColor, drawBorder: false },
+            ticks: { font: { size: 11 } },
+            title: { display: true, text: 'Count', font: { size: 11 } }
+          },
+          y1: {
+            type: 'linear',
+            position: 'right',
+            grid: { drawBorder: false, display: false },
+            ticks: {
+              font: { size: 11 },
+              callback: v => v >= 100000 ? '' + (v / 100000).toFixed(1) + 'L' : '' + (v / 1000) + 'K'
+            },
+            title: { display: true, text: 'Amount', font: { size: 11 } }
+          }
+        }
+      }
+    });
+  }
+
+  function buildPaymentModeChart(data) {
+    initChartWraps();
+    const wrap = paymentModeWrap;
+
+    if (!data || data.length === 0) {
+      if (wrap) wrap.innerHTML = '<div class="text-center text-muted" style="padding:40px">No data for selected period</div>';
+      return;
+    }
+
+    if (paymentModeChart) paymentModeChart.destroy();
+    if (!wrap) return;
+
+    // Restore canvas if previously cleared
+    if (!document.getElementById('paymentModeChart')) {
+      wrap.innerHTML = '<canvas id="paymentModeChart"></canvas>';
+    }
+    const ctx = document.getElementById('paymentModeChart');
+
+    const labels = data.map(d => d.payment_mode);
+    const totals = data.map(d => parseFloat(d.total || 0));
+
+    const colors = [
+      getVar('--green'),
+      getVar('--blue'),
+      getVar('--amber'),
+      getVar('--orange'),
+      getVar('--red'),
+      getVar('--text2'),
+    ];
+
+    paymentModeChart = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: labels,
+        datasets: [{
+          data: totals,
+          backgroundColor: colors.slice(0, labels.length),
+          borderWidth: 0,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: true,
+            position: 'right',
+            labels: { usePointStyle: true, pointStyle: 'rectRounded', padding: 12, font: { size: 11 } }
+          },
+          tooltip: {
+            backgroundColor: getVar('--surface') || '#2d2d2d',
+            titleColor: getVar('--text') || '#fff',
+            bodyColor: getVar('--text2') || '#ccc',
+            borderColor: gridColor,
+            borderWidth: 1, padding: 10, cornerRadius: 6,
+            callbacks: {
+              label: ctx => ' ' + ctx.label + ': ' + formatCurrency(ctx.parsed)
+            }
+          }
+        }
+      }
+    });
+  }
+
+  function populateRecentInvoices(invoices) {
+    const tbody = document.getElementById('recent-invoices-body');
+    if (!tbody || !invoices) return;
+
+    if (invoices.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted" style="padding:24px">No invoices found.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = invoices.map(inv => {
+      const typeBadge = inv.invoice_type === 'Cash'
+        ? '<span class="badge badge-done">Cash</span>'
+        : '<span class="badge badge-pending">Credit</span>';
+
+      const pmBadge = `<span class="badge badge-active" style="text-transform:capitalize">${inv.payment_mode}</span>`;
+
+      return `
+        <tr class="dash-fade-in">
+          <td class="td-mono">#${inv.id}</td>
+          <td>${inv.customer}</td>
+          <td>${typeBadge}</td>
+          <td>${pmBadge}</td>
+          <td class="td-mono">${formatCurrency(inv.total_amount)}</td>
+          <td class="td-mono text-muted">${formatCurrency(inv.discount_amount)}</td>
+          <td class="td-mono text-muted">${formatCurrency(inv.advance_amount)}</td>
+          <td class="td-mono val-green">${formatCurrency(inv.final_amount)}</td>
+          <td class="text-muted">${inv.created_at}</td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  // ════════════════════════════════════════════
+  //  FETCH DASHBOARD DATA
+  // ════════════════════════════════════════════
+  async function loadDashboard(dateFilter = 'this_month') {
+    if (activeFetch) activeFetch.abort();
+    activeFetch = new AbortController();
+    try {
+      const url = `{% url 'invoice:dashboard_data' %}?date_filter=${dateFilter}`;
+      const res = await fetch(url, {
+        signal: activeFetch.signal,
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+
+      populateKPIs(data.kpis);
+      buildMonthlyTrendChart(data.monthly_trend);
+      buildPaymentModeChart(data.payment_breakdown);
+      populateRecentInvoices(data.recent_invoices);
+
+      if (typeof renderIcons === 'function') renderIcons();
+
+    } catch (err) {
+      if (err.name === 'AbortError') return;
+      console.error('Dashboard load error:', err);
+      const kpiEl = document.getElementById('kpi-total-invoices');
+      if (kpiEl) {
+        kpiEl.innerHTML = '<span style="color:var(--red);font-size:14px">Failed to load</span>';
+      }
+    }
+  }
+
+  // ── Date Filter Binding ──
+  const filterSelect = document.getElementById('dashboard-date-filter');
+  const subtitleEl = document.getElementById('dashboard-subtitle');
+
+  if (filterSelect) {
+    filterSelect.addEventListener('change', (e) => {
+      if (subtitleEl) {
+        const selectedText = e.target.options[e.target.selectedIndex].text;
+        subtitleEl.innerHTML = `Overview of invoice performance — ${selectedText}`;
+      }
+
+      document.querySelectorAll('.kpi-value').forEach(el => {
+        el.style.color = '';
+        el.classList.remove('dash-fade-in');
+        el.innerHTML = '<span class="skeleton-text">--</span>';
+      });
+      loadDashboard(e.target.value);
+    });
+  }
+
+  loadDashboard(filterSelect ? filterSelect.value : 'this_month');
+});
+</script>
+{% endblock %}

@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}Suppliers{% endblock %}
+
+{% block content %}
+<!-- Page header -->
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Suppliers</h1>
+    <p class="page-sub">Manage supplier records</p>
+  </div>
+  <div class="breadcrumb">
+    Dashboard <i data-icon="chevronRight"></i> <span>Suppliers</span>
+  </div>
+</div>
+
+<!-- Content -->
+<div class="content">
+
+  <!-- ══ SUPPLIERS ══ -->
+  <div class="page active" id="page-suppliers">
+    <form class="page-actions" id="supplier-search-form" onsubmit="return false;">
+      <div class="filters-row">
+        <div class="search-box search-box-wide">
+          <i data-icon="search"></i>
+          <input type="search" name="q" value="{{ search_query }}" placeholder="Search suppliers…" autofocus autocomplete="off"/>
+        </div>
+        <button type="submit" class="btn btn-primary" onclick="reloadTable('supplier-table')">
+          <i data-icon="search"></i>
+          Search
+        </button>
+      </div>
+      {% if perms.supplier.add_supplier %}
+      <a href="{% url 'supplier:add' %}" class="btn btn-primary">
+        <i data-icon="plus"></i>
+        Add Supplier
+      </a>
+      {% endif %}
+    </form>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Supplier Records</div>
+        <span class="info-secondary">{{ suppliers_count }} suppliers registered</span>
+      </div>
+      <div class="table-wrap">
+        <table id="supplier-table">
+          <thead>
+            <tr>
+              <th data-sort="name">Supplier</th>
+              <th>Contact Person</th>
+              <th>Email</th>
+              <th data-sort="phone">Phone</th>
+              <th>Address</th>
+              <th data-sort="created_at">Created</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="supplier-table-body">
+            <!-- Data loaded via AJAX (fetchData.js) -->
+            <tr>
+                <td colspan="7" class="text-center loading-cell">
+                    <div class="loading">
+                        <i class="fas fa-spinner fa-spin"></i> Loading...
+                    </div>
+                </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <!-- Pagination Container -->
+      <div id="supplier-table_pagination"></div>
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        initTableAjax(
+            'supplier-search-form', 
+            'supplier-table', 
+            '{% url "supplier:fetch" %}', 
+            {
+                method: 'GET',
+                debounceDelay: 400,
+                placeholder: 'Loading suppliers...'
+            }
+        );
+        initTableSorting('supplier-table');
+    });
+</script>
+{% endblock extra_js %}

@@ -1,0 +1,26 @@
+{% load static %}
+{% load custom_filters %}
+<div class="slot">
+  <div class="data_section">
+    <div class="text_section">
+      <div class="shop-name">AeroSeva Store</div>
+      <div class="details">{{ values.company_name }} - {{ values.part_name }}</div>
+      {% if values.part_number %}<div class="details">Part: {{ values.part_number }}</div>{% endif %}
+      {% if barcode_config.show_product_code %}
+        <div class="code">
+          <span class="code-value">{{ values.barcode }}</span>
+        </div>
+      {% endif %}
+    </div>
+    <div class="amount_section">
+        <div class="price-text">
+          <span class="price">{{ values.selling_price|currency_nonDecimal }} /-</span>
+        </div>
+    </div>
+  </div>
+  <div class="barcode">
+    <div class="image">
+      <img src="data:image/svg+xml;base64,{{ barcode_svg }}" />
+    </div>
+  </div>
+</div>

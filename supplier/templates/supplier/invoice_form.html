@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ title }}</h1>
+    <p class="page-sub">Record an invoice for {{ supplier.name }}</p>
+  </div>
+  <div class="breadcrumb">
+    <a href="{% url 'supplier:list' %}">Suppliers</a>
+    <i data-icon="chevronRight"></i>
+    <a href="{% url 'supplier:detail' supplier.pk %}">{{ supplier.name }}</a>
+    <i data-icon="chevronRight"></i>
+    <span>{{ title }}</span>
+  </div>
+</div>
+
+<div class="content">
+  <div class="page active">
+    <div class="form-container">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">{{ title }}</div>
+            <div class="card-sub">Invoice for {{ supplier.name }}</div>
+          </div>
+          <a href="{% url 'supplier:detail' supplier.pk %}" class="btn btn-secondary btn-sm">Back to Details</a>
+        </div>
+        
+        <div class="card-body form-body">
+          <form method="post" novalidate>
+            {% csrf_token %}
+
+            <!-- Invoice Identity -->
+            <div class="form-section">
+              <div class="form-section-title">Invoice Details</div>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label class="form-label" for="{{ form.invoice_number.id_for_label }}">
+                    Invoice Number <span>*</span>
+                  </label>
+                  {{ form.invoice_number }}
+                  {% if form.invoice_number.errors %}
+                  <div class="form-feedback"><div class="form-error">{{ form.invoice_number.errors }}</div></div>
+                  {% endif %}
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="{{ form.invoice_date.id_for_label }}">
+                    Invoice Date <span>*</span>
+                  </label>
+                  {{ form.invoice_date }}
+                  {% if form.invoice_date.errors %}
+                  <div class="form-feedback"><div class="form-error">{{ form.invoice_date.errors }}</div></div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+
+            <!-- Type & GST -->
+            <div class="form-section">
+              <div class="form-section-title">Tax Information</div>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label class="form-label" for="{{ form.invoice_type.id_for_label }}">
+                    Invoice Type
+                  </label>
+                  {{ form.invoice_type }}
+                  {% if form.invoice_type.errors %}
+                  <div class="form-feedback"><div class="form-error">{{ form.invoice_type.errors }}</div></div>
+                  {% endif %}
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="{{ form.gst_type.id_for_label }}">
+                    GST Type
+                  </label>
+                  {{ form.gst_type }}
+                  {% if form.gst_type.errors %}
+                  <div class="form-feedback"><div class="form-error">{{ form.gst_type.errors }}</div></div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+
+            <!-- Amounts -->
+            <div class="form-section">
+              <div class="form-section-title">Amounts</div>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label class="form-label" for="{{ form.sub_total.id_for_label }}">
+                    Sub Total
+                  </label>
+                  {{ form.sub_total }}
+                  {% if form.sub_total.errors %}
+                  <div class="form-feedback"><div class="form-error">{{ form.sub_total.errors }}</div></div>
+                  {% endif %}
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="{{ form.cgst_amount.id_for_label }}">
+                    CGST Amount
+                  </label>
+                  {{ form.cgst_amount }}
+                  {% if form.cgst_amount.errors %}
+                  <div class="form-feedback"><div class="form-error">{{ form.cgst_amount.errors }}</div></div>
+                  {% endif %}
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="{{ form.igst_amount.id_for_label }}">
+                    IGST Amount
+                  </label>
+                  {{ form.igst_amount }}
+                  {% if form.igst_amount.errors %}
+                  <div class="form-feedback"><div class="form-error">{{ form.igst_amount.errors }}</div></div>
+                  {% endif %}
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="{{ form.adjustment_amount.id_for_label }}">
+                    Adjustment
+                  </label>
+                  {{ form.adjustment_amount }}
+                  {% if form.adjustment_amount.errors %}
+                  <div class="form-feedback"><div class="form-error">{{ form.adjustment_amount.errors }}</div></div>
+                  {% endif %}
+                </div>
+              </div>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label class="form-label" for="{{ form.total_amount.id_for_label }}">
+                    Total Amount <span>*</span>
+                  </label>
+                  {{ form.total_amount }}
+                  {% if form.total_amount.errors %}
+                  <div class="form-feedback"><div class="form-error">{{ form.total_amount.errors }}</div></div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+
+            <!-- Notes -->
+            <div class="form-section">
+              <div class="form-section-title">Additional</div>
+              <div class="form-grid">
+                <div class="form-group" style="grid-column: 1 / -1;">
+                  <label class="form-label" for="{{ form.notes.id_for_label }}">Notes</label>
+                  {{ form.notes }}
+                  {% if form.notes.errors %}
+                  <div class="form-feedback"><div class="form-error">{{ form.notes.errors }}</div></div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+
+            <div class="divider form-divider"></div>
+            
+            <div class="form-actions">
+              <a href="{% url 'supplier:detail' supplier.pk %}" class="btn btn-secondary">Cancel</a>
+              <button type="submit" class="btn btn-primary">Save Invoice</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

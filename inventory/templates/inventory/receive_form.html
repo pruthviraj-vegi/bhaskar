@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% load custom_filters %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ title }}</h1>
+    <p class="page-sub">Add newly purchased stock into inventory</p>
+  </div>
+  <div class="breadcrumb">
+    <a href="{% url 'inventory:list' %}">Inventory</a>
+    <i data-icon="chevronRight"></i>
+    <a href="{% url 'inventory:detail' product.pk %}">{{ product.part_name }}</a>
+    <i data-icon="chevronRight"></i>
+    <span>Receive Stock</span>
+  </div>
+</div>
+
+<div class="content">
+  <div class="page active">
+    <div class="form-container">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Receive Inventory</div>
+            <div class="card-sub">{{ product.part_name }} ({{ product.company_name }})</div>
+          </div>
+          <a href="{% url 'inventory:detail' product.pk %}" class="btn btn-secondary btn-sm">Cancel</a>
+        </div>
+        
+        <div class="card-body form-body">
+          <form method="post" novalidate>
+            {% csrf_token %}
+
+            <div class="form-section">
+              <div class="form-section-title">Incoming Stock Details</div>
+              <p class="info-secondary" style="margin-bottom: 12px; font-size: 13px;">
+                Input the amount of new stock arriving. This quantity will be added to the current inventory balance.
+              </p>
+              
+              <div class="form-grid">
+                <div class="form-group">
+                  <label class="form-label" for="{{ form.quantity.id_for_label }}">
+                    Quantity Arrived ({{ product.get_uom_display }}) <span>*</span>
+                  </label>
+                  {{ form.quantity }}
+                  {% if form.quantity.errors %}
+                  <div class="form-feedback"><div class="form-error">{{ form.quantity.errors }}</div></div>
+                  {% endif %}
+                </div>
+              </div>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label class="form-label" for="{{ form.purchased_price.id_for_label }}">
+                    Purchased Price
+                  </label>
+                  {{ form.purchased_price }}
+                  {% if form.purchased_price.help_text %}
+                  <div class="form-feedback"><div class="form-hint">{{ form.purchased_price.help_text }}</div></div>
+                  {% endif %}
+                  {% if form.purchased_price.errors %}
+                  <div class="form-feedback"><div class="form-error">{{ form.purchased_price.errors }}</div></div>
+                  {% endif %}
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="{{ form.selling_price.id_for_label }}">
+                    Selling Price
+                  </label>
+                  {{ form.selling_price }}
+                  {% if form.selling_price.help_text %}
+                  <div class="form-feedback"><div class="form-hint">{{ form.selling_price.help_text }}</div></div>
+                  {% endif %}
+                  {% if form.selling_price.errors %}
+                  <div class="form-feedback"><div class="form-error">{{ form.selling_price.errors }}</div></div>
+                  {% endif %}
+                </div>
+              </div>
+              <div class="form-grid">
+                <div class="form-group" style="grid-column: 1 / -1;">
+                  <label class="form-label" for="{{ form.notes.id_for_label }}">Reason / Notes</label>
+                  {{ form.notes }}
+                  {% if form.notes.errors %}
+                  <div class="form-feedback"><div class="form-error">{{ form.notes.errors }}</div></div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+
+            <div class="divider form-divider"></div>
+            
+            <div class="form-actions">
+              <a href="{% url 'inventory:detail' product.pk %}" class="btn btn-secondary">Cancel</a>
+              <button type="submit" class="btn btn-primary">Receive Stock</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

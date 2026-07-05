@@ -1,0 +1,49 @@
+{% load static %}
+{% load custom_filters %}
+
+{% for inv in page_obj %}
+<tr>
+    <!-- Invoice ID -->
+    <td class="td-mono" style="color: var(--text3);">#{{ inv.id }}</td>
+    <!-- Customer -->
+    <td>
+    <div class="cell-profile">
+        <div class="avatar blue">
+        {{ inv.customer.name|first|upper }}
+        </div>
+        <div class="info-stacked">
+        <div class="info-primary">{{ inv.customer.name }}</div>
+        <div class="info-secondary">{{ inv.customer.phone|phone_number }}</div>
+        </div>
+    </div>
+    </td>
+    <!-- Type -->
+    <td>
+    {% if inv.invoice_type == 'cash' %}
+        <span class="badge badge-success">Cash</span>
+    {% else %}
+        <span class="badge badge-warning">Credit</span>
+    {% endif %}
+    </td>
+    <!-- Payment Mode -->
+    <td>
+        <span class="badge">{{ inv.get_payment_mode_display }}</span>
+    </td>
+    <!-- Total -->
+    <td class="td-mono" style="text-align: right; font-weight: 600;">{{ inv.total_amount|currency }}</td>
+    <!-- Date -->
+    <td class="info-secondary">{{ inv.created_at|date:"M d, Y" }}</td>
+    <!-- Actions -->
+    <td>
+    <div class="action-buttons">
+        <a href="{% url 'invoice:detail' inv.pk %}" class="action-btn edit" title="View Invoice">
+        <i data-icon="eye"></i>
+        </a>
+    </div>
+    </td>
+</tr>
+{% empty %}
+<tr>
+    <td colspan="7" class="info-secondary text-center">No invoices found.</td>
+</tr>
+{% endfor %}

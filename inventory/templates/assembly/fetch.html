@@ -1,0 +1,55 @@
+{% load custom_filters %}
+
+{% for assembly in page_obj %}
+{% assembly_totals assembly as totals %}
+<tr>
+    <!-- Assembly -->
+    <td>
+    <div class="cell-profile">
+        <div class="avatar blue">{{ assembly.name|first|upper }}</div>
+        <div class="info-stacked">
+        <div class="info-primary">{{ assembly.name }}</div>
+        <div class="info-secondary">{% if assembly.barcode %}<i data-icon="barcode"></i> {{ assembly.barcode }}{% else %}No barcode{% endif %}</div>
+        </div>
+    </div>
+    </td>
+    <!-- Description -->
+    <td class="info-secondary">{{ assembly.description|default:"-"|truncatewords:5 }}</td>
+    <!-- Unique Items -->
+    <td><span class="badge">{{ totals.unique }}</span></td>
+    <!-- Total Qty -->
+    <td class="td-mono" style="font-weight: 600;">{{ totals.qty }}</td>
+    <!-- Possible Assemblies -->
+    <td>
+        <span class="td-mono" style="font-weight: 700; color: {% if max_possible_map|get_item:assembly.pk > 0 %}var(--green){% else %}var(--red){% endif %};">
+            {{ max_possible_map|get_item:assembly.pk|default:"0" }}
+        </span>
+    </td>
+    <!-- Total Amount -->
+    <td class="td-mono" style="font-weight: 600; color: var(--accent);">{{ totals.amount|currency }}</td>
+    <!-- Actions -->
+    <td style="text-align:right;">
+    <div class="action-buttons" style="justify-content:flex-end;">
+        {% if perms.inventory.view_assemblyproduct %}
+        <a href="{% url 'inventory:assembly_detail' assembly.pk %}" class="action-btn" title="View Details">
+        <i data-icon="eye"></i>
+        </a>
+        {% endif %}
+        {% if perms.inventory.change_assemblyproduct %}
+        <a href="{% url 'inventory:assembly_edit' assembly.pk %}" class="action-btn edit" title="Edit">
+        <i data-icon="edit"></i>
+        </a>
+        {% endif %}
+        {% if perms.inventory.delete_assemblyproduct %}
+        <a href="{% url 'inventory:assembly_delete' assembly.pk %}" class="action-btn delete" title="Delete">
+        <i data-icon="trash"></i>
+        </a>
+        {% endif %}
+    </div>
+    </td>
+</tr>
+{% empty %}
+<tr>
+    <td colspan="7" class="info-secondary text-center">No assembly products found.</td>
+</tr>
+{% endfor %}

@@ -1,0 +1,71 @@
+{% load static %}
+{% load custom_filters %}
+
+{% for p in page_obj %}
+<tr>
+    <!-- Product -->
+    <td>
+    <div class="cell-profile">
+        <div class="avatar blue">
+        {{ p.company_name|first|upper }}
+        </div>
+        <div class="info-stacked">
+        <div class="info-primary">{{ p.part_name }}</div>
+        <div class="info-secondary">{{ p.company_name }}{% if p.part_number %} · {{ p.part_number }}{% endif %}</div>
+        </div>
+    </div>
+    </td>
+    <!-- Barcode -->
+    <td class="td-mono">
+        {% if p.barcode %}
+        <i data-icon="barcode"></i>
+        {{ p.barcode }}
+        {% else %}
+        <span class="text-secondary">-</span>
+        {% endif %}
+    </td>
+    <!-- Qty -->
+    <td class="td-mono" style="text-align:right;">{{ p.stock_qty|default_if_none:0|floatformat:0 }}</td>
+    <!-- UOM -->
+    <td><span class="badge">{{ p.get_uom_display }}</span></td>
+    <!-- Cost -->
+    <td class="td-mono" style="text-align:right;">{{ p.purchased_price|currency }}</td>
+    <!-- Sell -->
+    <td class="td-mono" style="text-align:right;">{{ p.selling_price|currency }}</td>
+    <!-- Status -->
+    <td>
+    {% if p.is_active %}
+        <span class="badge badge-active">Active</span>
+    {% else %}
+        <span class="badge badge-inactive">Inactive</span>
+    {% endif %}
+    </td>
+    <!-- Actions -->
+    <td style="text-align:right;">
+    <div class="action-buttons" style="justify-content:flex-end;">
+        {% if perms.inventory.view_product %}
+        <a href="{% url 'inventory:detail' p.pk %}" class="action-btn" title="View Details">
+        <i data-icon="eye"></i>
+        </a>
+        {% endif %}
+        {% if perms.inventory.change_product %}
+        <a href="{% url 'inventory:edit' p.pk %}" class="action-btn edit" title="Edit">
+        <i data-icon="edit"></i>
+        </a>
+        {% endif %}
+        {% if perms.inventory.delete_product %}
+        <a href="{% url 'inventory:delete' p.pk %}" class="action-btn delete" title="Delete">
+        <i data-icon="trash"></i>
+        </a>
+        {% endif %}
+        <a href="{% url 'report:barcode' p.pk %}" class="action-btn" title="Print Barcode" target="_blank">
+        <i data-icon="barcode"></i>
+        </a>
+    </div>
+    </td>
+</tr>
+{% empty %}
+<tr>
+    <td colspan="8" class="info-secondary text-center">No products found.</td>
+</tr>
+{% endfor %}

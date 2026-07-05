@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ title }}</h1>
+    <p class="page-sub">Fill in product details below</p>
+  </div>
+  <div class="breadcrumb">
+    <a href="{% url 'inventory:list' %}">Inventory</a> <i data-icon="chevronRight"></i> <span>{{ title }}</span>
+  </div>
+</div>
+
+<div class="content">
+  <div class="page active">
+    <div class="form-container">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">{{ title }}</div>
+            <div class="card-sub">Product Information</div>
+          </div>
+          <a href="{% url 'inventory:list' %}" class="btn btn-secondary btn-sm">Back to List</a>
+        </div>
+        
+        <div class="card-body form-body">
+          <form method="post" novalidate>
+            {% csrf_token %}
+
+            <!-- Product Identity -->
+            <div class="form-section">
+              <div class="form-section-title">Product Identity</div>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label class="form-label" for="{{ form.company_name.id_for_label }}">
+                    Company / Brand <span>*</span>
+                  </label>
+                  {{ form.company_name }}
+                  {% if form.company_name.errors %}
+                  <div class="form-feedback"><div class="form-error">{{ form.company_name.errors }}</div></div>
+                  {% endif %}
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="{{ form.part_name.id_for_label }}">
+                    Part Name <span>*</span>
+                  </label>
+                  {{ form.part_name }}
+                  {% if form.part_name.errors %}
+                  <div class="form-feedback"><div class="form-error">{{ form.part_name.errors }}</div></div>
+                  {% endif %}
+                </div>
+              </div>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label class="form-label" for="{{ form.part_number.id_for_label }}">
+                    Part Number
+                  </label>
+                  {{ form.part_number }}
+                  {% if form.part_number.errors %}
+                  <div class="form-feedback"><div class="form-error">{{ form.part_number.errors }}</div></div>
+                  {% endif %}
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="{{ form.uom.id_for_label }}">
+                    Unit of Measure
+                  </label>
+                  {{ form.uom }}
+                  {% if form.uom.errors %}
+                  <div class="form-feedback"><div class="form-error">{{ form.uom.errors }}</div></div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+
+            <!-- Pricing -->
+            <div class="form-section">
+              <div class="form-section-title">Pricing</div>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label class="form-label" for="{{ form.purchased_price.id_for_label }}">
+                    Purchased Price
+                  </label>
+                  {{ form.purchased_price }}
+                  {% if form.purchased_price.errors %}
+                  <div class="form-feedback"><div class="form-error">{{ form.purchased_price.errors }}</div></div>
+                  {% endif %}
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="{{ form.selling_price.id_for_label }}">
+                    Selling Price
+                  </label>
+                  {{ form.selling_price }}
+                  {% if form.selling_price.errors %}
+                  <div class="form-feedback"><div class="form-error">{{ form.selling_price.errors }}</div></div>
+                  {% endif %}
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="{{ form.discount.id_for_label }}">
+                    Discount (%)
+                  </label>
+                  {{ form.discount }}
+                  {% if form.discount.errors %}
+                  <div class="form-feedback"><div class="form-error">{{ form.discount.errors }}</div></div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+
+            <!-- Initial Quantity (only on create) -->
+            {% if form.initial_quantity %}
+            <div class="form-section">
+              <div class="form-section-title">Initial Stock</div>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label class="form-label" for="{{ form.initial_quantity.id_for_label }}">
+                    Initial Quantity
+                  </label>
+                  {{ form.initial_quantity }}
+                  {% if form.initial_quantity.errors %}
+                  <div class="form-feedback"><div class="form-error">{{ form.initial_quantity.errors }}</div></div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+            {% endif %}
+
+            <!-- Additional -->
+            <div class="form-section">
+              <div class="form-section-title">Additional</div>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label class="form-label" for="{{ form.is_active.id_for_label }}">
+                    Active Status
+                  </label>
+                  <div style="display:flex; align-items:center; gap:8px; padding-top:8px;">
+                    {{ form.is_active }}
+                    <span class="info-secondary">Mark product as active</span>
+                  </div>
+                </div>
+              </div>
+              <div class="form-grid">
+                <div class="form-group" style="grid-column: 1 / -1;">
+                  <label class="form-label" for="{{ form.notes.id_for_label }}">Notes</label>
+                  {{ form.notes }}
+                  {% if form.notes.errors %}
+                  <div class="form-feedback"><div class="form-error">{{ form.notes.errors }}</div></div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+
+            <div class="divider form-divider"></div>
+            
+            <div class="form-actions">
+              <a href="{% url 'inventory:list' %}" class="btn btn-secondary">Cancel</a>
+              <button type="submit" class="btn btn-primary">Save Product</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

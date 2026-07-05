@@ -1,0 +1,31 @@
+{% load custom_filters %}
+
+{% for item in items %}
+<tr id="assembly-row-{{ item.pk }}">
+  <td>
+    <div style="font-weight: 500;">{{ item.product.part_name }}</div>
+    <div style="font-size: 12px; color: var(--text3);">{{ item.product.company_name }}</div>
+  </td>
+  <td class="td-mono">{{ item.product.barcode|default:"-" }}</td>
+  <td style="text-align: center;">
+    <div class="td-mono mode-switch" style="display:none;"><span class="item-price" data-id="{{ item.pk }}" contenteditable="true" style="border-bottom: 1px solid var(--accent); padding: 6px 12px; outline: none; background: var(--surface2); border-radius: var(--r-sm); min-width: 80px; display: inline-block; text-align: center; font-weight: 500; cursor: text;">{{ item.selling_price|floatformat:2 }}</span></div>
+    <div class="td-mono mode-view">{{ item.selling_price|currency }}</div>
+  </td>
+  <td style="text-align: center;">
+    <div class="mode-switch" style="display:none;"><input type="text" inputmode="numeric" id="qty-{{ item.pk }}" class="td-mono" value="{{ item.quantity_required|floatformat:0 }}" style="width: 80px; padding: 6px 12px; border: 1px solid var(--border); border-radius: var(--r-sm); text-align: center; background: var(--surface2); color: var(--text); outline: none; font-weight: 600; font-size: 14px;" onchange="setQty({{ item.pk }}, this.value)"></div>
+    <div class="td-mono mode-view">{{ item.quantity_required|floatformat:0 }}</div>
+  </td>
+  <td style="text-align: right;" class="td-mono" style="font-weight: 500;">{{ item.selling_price|mult:item.quantity_required|currency }}</td>
+  <td style="text-align: right;">
+    <div class="mode-switch" style="display:none;"><button class="action-btn delete" onclick="removeItem({{ item.pk }})"><i data-icon="trash"></i></button></div>
+  </td>
+</tr>
+{% empty %}
+<tr id="empty-assembly-row">
+  <td colspan="6" style="text-align: center; padding: 60px;">
+    <i data-icon="box" style="width: 48px; height: 48px; color: var(--text3); margin-bottom: 16px; display: inline-block;"></i>
+    <div style="font-size: 16px; font-weight: 500;">No items in this assembly</div>
+    <div style="color: var(--text3); font-size: 14px;">Search and add products using the lookup panel above.</div>
+  </td>
+</tr>
+{% endfor %}

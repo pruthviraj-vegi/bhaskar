@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ title }}</h1>
+    <p class="page-sub">Record a payment for {{ supplier.name }}</p>
+  </div>
+  <div class="breadcrumb">
+    <a href="{% url 'supplier:list' %}">Suppliers</a>
+    <i data-icon="chevronRight"></i>
+    <a href="{% url 'supplier:detail' supplier.pk %}">{{ supplier.name }}</a>
+    <i data-icon="chevronRight"></i>
+    <span>{{ title }}</span>
+  </div>
+</div>
+
+<div class="content">
+  <div class="page active">
+    <div class="form-container">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">{{ title }}</div>
+            <div class="card-sub">Payment to {{ supplier.name }}</div>
+          </div>
+          <a href="{% url 'supplier:detail' supplier.pk %}" class="btn btn-secondary btn-sm">Back to Details</a>
+        </div>
+        
+        <div class="card-body form-body">
+          <form method="post" novalidate>
+            {% csrf_token %}
+
+            <!-- Payment Details -->
+            <div class="form-section">
+              <div class="form-section-title">Payment Details</div>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label class="form-label" for="{{ form.amount.id_for_label }}">
+                    Amount <span>*</span>
+                  </label>
+                  {{ form.amount }}
+                  {% if form.amount.errors %}
+                  <div class="form-feedback"><div class="form-error">{{ form.amount.errors }}</div></div>
+                  {% endif %}
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="{{ form.method.id_for_label }}">
+                    Payment Method <span>*</span>
+                  </label>
+                  {{ form.method }}
+                  {% if form.method.errors %}
+                  <div class="form-feedback"><div class="form-error">{{ form.method.errors }}</div></div>
+                  {% endif %}
+                </div>
+              </div>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label class="form-label" for="{{ form.transaction_id.id_for_label }}">
+                    Transaction ID
+                  </label>
+                  {{ form.transaction_id }}
+                  {% if form.transaction_id.errors %}
+                  <div class="form-feedback"><div class="form-error">{{ form.transaction_id.errors }}</div></div>
+                  {% endif %}
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="{{ form.payment_date.id_for_label }}">
+                    Payment Date <span>*</span>
+                  </label>
+                  {{ form.payment_date }}
+                  {% if form.payment_date.errors %}
+                  <div class="form-feedback"><div class="form-error">{{ form.payment_date.errors }}</div></div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+
+            <div class="divider form-divider"></div>
+            
+            <div class="form-actions">
+              <a href="{% url 'supplier:detail' supplier.pk %}" class="btn btn-secondary">Cancel</a>
+              <button type="submit" class="btn btn-primary">Save Payment</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

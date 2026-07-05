@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}Create Invoice — {{ cart.name }}{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Create Invoice</h1>
+    <p class="page-sub">Billing cart <strong>{{ cart.name }}</strong></p>
+  </div>
+  <div class="breadcrumb">
+    <a href="{% url 'cart:list' %}">Carts</a> <i data-icon="chevronRight"></i>
+    <a href="{% url 'cart:detail' cart.pk %}">{{ cart.name }}</a> <i data-icon="chevronRight"></i>
+    <span>Create Invoice</span>
+  </div>
+</div>
+
+<div class="content">
+  <div class="page active">
+    <form method="post" novalidate id="invoice-form">
+      {% csrf_token %}
+
+      <div style="display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap;">
+
+        <!-- ── LEFT: Invoice Form ── -->
+        <div style="flex: 1; min-width: 0;">
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Invoice Details</div>
+                <div class="card-sub">Fill in billing information</div>
+              </div>
+              <a href="{% url 'cart:detail' cart.pk %}" class="btn btn-secondary btn-sm">Back to Cart</a>
+            </div>
+
+            <div class="card-body form-body">
+
+              <!-- Customer Select -->
+              <div class="form-section">
+                <div class="form-section-title">Customer <span style="color: var(--red);">*</span></div>
+                <div class="form-grid">
+                  <div class="form-group" style="grid-column: 1 / -1;">
+                    <label class="form-label" for="{{ form.customer.id_for_label }}">Select Customer</label>
+                    {{ form.customer }}
+                    {% if form.customer.errors %}
+                    <div class="form-feedback"><div class="form-error">{{ form.customer.errors }}</div></div>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+
+              <!-- Invoice Type & Payment Mode -->
+              <div class="form-section">
+                <div class="form-section-title">Payment Information</div>
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label class="form-label" for="{{ form.invoice_type.id_for_label }}">
+                      Invoice Type
+                    </label>
+                    {{ form.invoice_type }}
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="{{ form.payment_mode.id_for_label }}">
+                      Payment Mode
+                    </label>
+                    {{ form.payment_mode }}
+                  </div>
+                </div>
+              </div>
+
+              <!-- Amounts -->
+              <div class="form-section">
+                <div class="form-section-title">Amounts</div>
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label class="form-label" for="{{ form.discount_amount.id_for_label }}">
+                      Discount Amount (₹)
+                    </label>
+                    {{ form.discount_amount }}
+                    {% if form.discount_amount.errors %}
+                    <div class="form-feedback"><div class="form-error">{{ form.discount_amount.errors }}</div></div>
+                    {% endif %}
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="{{ form.advance_amount.id_for_label }}">
+                      Advance Amount (₹)
+                    </label>
+                    {{ form.advance_amount }}
+                    {% if form.advance_amount.errors %}
+                    <div class="form-feedback"><div class="form-error">{{ form.advance_amount.errors }}</div></div>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+
+              <!-- Notes -->
+              <div class="form-section">
+                <div class="form-section-title">Notes</div>
+                <div class="form-grid">
+                  <div class="form-group" style="grid-column: 1 / -1;">
+                    <label class="form-label" for="{{ form.notes.id_for_label }}">
+                      {{ form.notes.label }}
+                    </label>
+                    {{ form.notes }}
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- ── RIGHT: Cart Summary ── -->
+        <div style="width: 420px; min-width: 320px;">
+          <div class="card" style="position: sticky; top: 20px;">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Cart Summary</div>
+                <div class="card-sub">{{ items|length }} item{{ items|length|pluralize }}</div>
+              </div>
+            </div>
+
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Product</th>
+                    <th style="text-align: center;">Qty</th>
+                    <th style="text-align: right;">Price</th>
+                    <th style="text-align: right;">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for item in items %}
+                  <tr>
+                    <td>
+                      <div style="font-weight: 500; font-size: 13px;">{{ item.product.part_name }}</div>
+                      <div style="font-size: 11px; color: var(--text3);">{{ item.product.company_name }}</div>
+                    </td>
+                    <td style="text-align: center;" class="td-mono">{{ item.quantity }}</td>
+                    <td style="text-align: right;" class="td-mono">{{ item.price|currency }}</td>
+                    <td style="text-align: right;" class="td-mono">{{ item.total_price|currency }}</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Totals -->
+            <div style="padding: 16px; border-top: 1px solid var(--border);">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                <span style="color: var(--text3); font-size: 14px;">Subtotal</span>
+                <span class="td-mono" style="font-weight: 500;">{{ total_amount|currency }}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                <span style="color: var(--text3); font-size: 14px;">Discount</span>
+                <span class="td-mono" id="summary-discount" style="color: var(--red);">0.00</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; padding-top: 10px; border-top: 2px solid var(--border);">
+                <span style="font-weight: 600; font-size: 16px;">Net Payable</span>
+                <span class="td-mono" id="summary-net" style="font-weight: 700; font-size: 18px; color: var(--accent);">{{ total_amount|currency }}</span>
+              </div>
+            </div>
+
+            <div style="padding: 0 16px 16px 16px;">
+              <div class="divider form-divider" style="margin-top: 0;"></div>
+              <div class="form-actions" style="padding: 0;">
+                <a href="{% url 'cart:detail' cart.pk %}" class="btn btn-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary" id="submit-btn">
+                  <i data-icon="sale" style="margin-right: 6px;"></i> Create Invoice
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  $(document).ready(function() {
+      $('#id_customer').select2({
+          width: '100%',
+          placeholder: 'Search by name or phone…'
+      });
+  });
+
+  // ── Live Net Total ──
+  const CART_SUBTOTAL = {{ total_amount }};
+  const discountInput = document.getElementById('{{ form.discount_amount.id_for_label }}');
+  if (discountInput) {
+    function updateNet() {
+      const raw = discountInput.value.replace(/,/g, '');
+      const disc = parseFloat(raw) || 0;
+      const net = CART_SUBTOTAL - disc;
+
+      document.getElementById('summary-discount').textContent =
+        disc > 0 ? '- ' + disc.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00';
+
+      document.getElementById('summary-net').textContent =
+        (net > 0 ? net : 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    discountInput.addEventListener('input', updateNet);
+    discountInput.addEventListener('change', updateNet);
+  }
+</script>
+{% endblock %}

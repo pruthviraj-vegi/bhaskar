@@ -1,0 +1,210 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Dashboard{% endblock %} — GarageFlow</title>
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <!-- Chart.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <!-- Main CSS -->
+  <link rel="stylesheet" href="{% static 'css/main.css' %}">
+  <!-- Select2 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+  <!-- Favicon -->
+  <link rel="icon" href="{% static 'images/favicon.ico' %}" type="image/x-icon">
+
+  {% block extra_css %}{% endblock %}
+
+  <!-- Theme: apply saved preference before paint -->
+  <script>
+    (function() {
+      var t = localStorage.getItem('theme') || 'light';
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
+</head>
+<body>
+  <div class="app">
+
+    <!-- ============================================
+        1. HEADER BAR (topbar)
+    ============================================ -->
+    {% if not popup_dialog %}
+    <header class="topbar">
+      <!-- Brand -->
+      <div class="topbar-brand">
+        <div class="brand-logo">
+          <i data-icon="logo"></i>
+        </div>
+        <div>
+          <div class="brand-name">GarageOS</div>
+          <div class="brand-tag">Workshop Suite</div>
+        </div>
+      </div>
+
+      <!-- Right side actions -->
+      <div class="topbar-right">
+        <div class="search-box">
+          <i data-icon="search"></i>
+          <input type="text" placeholder="Search anything…"/>
+        </div>
+        <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+          <i id="themeIcon" data-icon="theme"></i>
+        </button>
+        <button class="icon-btn">
+          <i data-icon="bell"></i>
+        </button>
+        {% if user.is_authenticated %}
+        <div class="user-chip">
+          <div class="user-avatar">{{ user.username|slice:":2"|upper }}</div>
+          <div class="user-info">
+            <div class="user-name">{{ user.username }}</div>
+            <div class="user-role">{{ BUSINESS_INFO.name }}</div>
+          </div>
+        </div>
+        <a href="{% url 'base:logout' %}" class="icon-btn" title="Logout">
+          <i data-icon="logout"></i>
+        </a>
+        {% endif %}
+      </div>
+    </header>
+
+    {% include 'navbar.html' %}
+    {% endif %}
+
+    <div class="main">
+      {% block content %}{% endblock %}
+    </div>
+
+  </div>
+
+  <!-- ============================================
+       SCRIPTS
+       ============================================ -->
+  <script src="{% static 'js/icons.js' %}"></script>
+  <script src="{% static 'js/main.js' %}" async></script>
+  <script src="{% static 'js/fetchData.js' %}"></script>
+  <script src="{% static 'js/suggestion.js' %}"></script>
+  <!-- jQuery + Select2 (globally available) -->
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      var el = document.querySelector("[autofocus]");
+      if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA")) {
+        if (el.type !== "number" && el.type !== "email") {
+          try {
+            var len = el.value.length;
+            el.setSelectionRange(len, len);
+          } catch(e) {}
+        }
+      }
+    });
+
+    // Globally format numerical inputs into Indian Number Format
+    document.addEventListener('DOMContentLoaded', function() {
+        function formatIndianNumber(value, maxDecimals = 2) {
+            if (value === undefined || value === null) return '';
+            value = String(value);
+
+            let isNegative = value.indexOf('-') === 0;
+            value = value.replace(/[^\d.]/g, ''); // Remove all non-numeric except decimal point
+            
+            // Allow only one decimal point
+            const decimalCount = (value.match(/\./g) || []).length;
+            if (decimalCount > 1) {
+                const firstDecimalIndex = value.indexOf('.');
+                value = value.slice(0, firstDecimalIndex + 1) + value.slice(firstDecimalIndex + 1).replace(/\./g, '');
+            }
+            
+            // Split integer and decimal
+            let [intPart, decPart] = value.split('.');
+            
+            if (intPart && intPart.length > 0) {
+                intPart = intPart.replace(/^0+/, ''); // Remove leading zeros
+                if (!intPart && decPart === undefined) intPart = '0';
+                else if (!intPart) intPart = '0';
+                
+                if (intPart.length > 3) {
+                    let last3 = intPart.slice(-3);
+                    let others = intPart.slice(0, -3);
+                    intPart = others.replace(/\B(?=(\d{2})+(?!\d))/g, ',') + ',' + last3;
+                }
+            }
+            
+            let result = intPart;
+
+            if (decPart !== undefined) {
+                decPart = decPart.slice(0, maxDecimals);
+                result = intPart + '.' + decPart;
+            } else if (value.endsWith('.')) {
+                result = intPart + '.';
+            }
+
+            if (isNegative && result && result !== '0') return '-' + result;
+            else if (isNegative) return '-';
+            
+            return result || '';
+        }
+        
+        // Auto-target all number inputs natively generated by Django to support comma separation safely
+        document.querySelectorAll('input[type="number"]').forEach(input => {
+            input.type = 'text';
+            input.setAttribute('inputmode', 'decimal');
+            input.classList.add('indian-number');
+            input.dataset.decimals = input.step && input.step.includes('.') ? input.step.split('.')[1].length : 2;
+        });
+
+        // Apply masking behavior
+        document.querySelectorAll('.indian-number').forEach(input => {
+            const maxDecimals = parseInt(input.dataset.decimals) || 2;
+            if (input.value) input.value = formatIndianNumber(input.value, maxDecimals);
+            
+            input.addEventListener('input', function(e) {
+                const cursorPos = e.target.selectionStart;
+                const oldLength = e.target.value.length;
+                const formatted = formatIndianNumber(e.target.value, maxDecimals);
+                e.target.value = formatted;
+                
+                const newLength = formatted.length;
+                const diff = newLength - oldLength;
+                try { e.target.setSelectionRange(cursorPos + diff, cursorPos + diff); } catch(err) {}
+            });
+            
+            input.addEventListener('blur', function(e) {
+                let value = e.target.value;
+                if (value.endsWith('.')) value = value.slice(0, -1);
+                // Append trailing zeros if decimals exist
+                if (maxDecimals > 0 && !value.includes('.') && value !== '') {
+                    value += '.00';
+                }
+                e.target.value = value;
+            });
+        });
+        
+        // Strip commas before actual form POST
+        document.querySelectorAll('form').forEach(form => {
+            form.addEventListener('submit', function() {
+                form.querySelectorAll('.indian-number').forEach(input => {
+                    input.value = input.value.replace(/,/g, '');
+                });
+            });
+        });
+    });
+  </script>
+
+  <!-- Django Messages Bridge -->
+  {% if messages %}
+    {% for message in messages %}
+    <script>showNotification("{{ message|escapejs }}", "{{ message.tags }}");</script>
+    {% endfor %}
+  {% endif %}
+
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

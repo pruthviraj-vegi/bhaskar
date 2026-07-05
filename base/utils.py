@@ -1,0 +1,397 @@
+"""
+Utility functions for the base app.
+"""
+
+from datetime import date, datetime, timedelta
+
+from django.core.paginator import Paginator
+from django.http import JsonResponse
+from django.template.loader import render_to_string
+from django.core.validators import RegexValidator
+
+from django.db.models import Q
+
+from base.getDates import DatesManipulation, quarter_start_end
+
+
+def get_financial_year(value):
+    """
+    Get financial year from a given date.
+    Financial year is considered from April (4) to March (3).
+
+    Args:
+        value (str | datetime | date): Input date. If string,
+                                       accepted formats include "YYYY-MM-DD",
+                                       "DD/MM/YYYY", "DD-MM-YYYY".
+
+    Returns:
+        str: Financial year in format 'YYYY-YY' (e.g. '2024-25')
+
+    Raises:
+        ValueError: If the input cannot be parsed as a valid date.
+    """
+
+    # --- Step 1: Parse the input into a datetime.date object ---
+    if isinstance(value, str):
+        # Try common formats
+        for fmt in ("%Y-%m-%d", "%d/%m/%Y", "%d-%m-%Y", "%b %d, %Y"):
+            try:
+                parsed_date = datetime.strptime(value, fmt).date()
+                break
+            except ValueError:
+                continue
+        else:
+            raise ValueError(f"Unrecognized date format: {value}")
+    elif isinstance(value, datetime):
+        parsed_date = value.date()
+    elif isinstance(value, date):
+        parsed_date = value
+    else:
+        raise ValueError("Input must be a string, datetime, or date object")
+
+    # --- Step 2: Calculate the financial year ---
+    if parsed_date.month >= 4:  # April to Dec
+        start_year = parsed_date.year
+        end_year = parsed_date.year + 1
+    else:  # Jan to March
+        start_year = parsed_date.year - 1
+        end_year = parsed_date.year
+
+    return f"{str(start_year)[2:]}-{str(end_year)[2:]}"
+
+
+class StringProcessor:
+    """
+    This class processes strings by cleaning them (removing spaces, slashes, question marks, and commas)
+    and converting them to different cases. It also handles the case where None or an empty string is passed.
+    """
+
+    def __init__(self, input_string=None):
+        """
+        Initializes the StringProcessor object.
+
+        Args:
+            input_string (str, optional): The input string to be processed. Defaults to None.
+        """
+        if input_string is None:
+            self.input_string = ""
+            self.cleaned_string = ""
+        else:
+            self.input_string = input_string
+            self.clean()
+
+    def clean(self):
+        """
+        Cleans the input string by removing spaces, slashes, question marks, and commas.
+        """
+        cleaned_string = " ".join(self.input_string.split())
+        cleaned_string = (
+            cleaned_string.replace("/", "").replace("?", "").replace(",", "")
+        )
+        self.cleaned_string = cleaned_string.upper()
+
+    def toUppercase(self):  # pylint: disable=invalid-name
+        """
+        Returns the cleaned string in uppercase.
+
+        Returns:
+            str: The cleaned string in uppercase.
+        """
+        return self.cleaned_string
+
+    def toLowercase(self):  # pylint: disable=invalid-name
+        """
+        Returns the cleaned string in lowercase.
+
+        Returns:
+            str: The cleaned string in lowercase.
+        """
+        return self.cleaned_string.lower()
+
+    def toTitle(self):  # pylint: disable=invalid-name
+        """
+        Returns the cleaned string in title case (first letter of each word capitalized).
+
+        Returns:
+            str: The cleaned string in title case.
+        """
+        return self.cleaned_string.title()
+
+    def toCapitalize(self):  # pylint: disable=invalid-name
+        """
+        Returns the cleaned string with only the first letter capitalized.
+
+        Returns:
+            str: The cleaned string with the first letter capitalized.
+        """
+        return self.cleaned_string.capitalize()
+
+
+def get_periodic_data(date_filter, current_start, current_end):
+    """
+    Return previous_start, previous_end, period_type for a given date filter.
+    Uses the existing DatesManipulation class to avoid code duplication.
+    """
+
+    dates = DatesManipulation()
+
+    # Map date filters to period types and get previous period dates
+    period_map = {
+        "today": ("daily", dates.yesterday_date),
+        "yesterday": (
+            "daily",
+            (current_start - timedelta(days=1), current_end - timedelta(days=1)),
+        ),
+        "this_month": ("monthly", dates.last_month),
+        "last_month": ("monthly", None),  # Need to calculate 2 months ago
+        "this_quarter": ("quarterly", dates.last_quarter),
+        "last_quarter": ("quarterly", None),  # Need to calculate 2 quarters ago
+        "this_finance": ("yearly", dates.last_finance),
+        "last_finance": ("yearly", None),  # Need to calculate 2 FY ago
+    }
+
+    if date_filter in period_map:
+        period_type, previous_dates = period_map[date_filter]
+
+        if previous_dates:
+            previous_start, previous_end = previous_dates
+            return (
+                (
+                    previous_start.date()
+                    if hasattr(previous_start, "date")
+                    else previous_start
+                ),
+                previous_end.date() if hasattr(previous_end, "date") else previous_end,
+                period_type,
+            )
+
+    # Handle special cases that need calculation
+    if date_filter == "last_month":
+        # Get 2 months ago
+        if current_start.month <= 2:
+            previous_start = current_start.replace(
+                year=current_start.year - 1,
+                month=current_start.month + 10 if current_start.month == 2 else 11,
+            )
+        else:
+            previous_start = current_start.replace(month=current_start.month - 2)
+
+        # Calculate end of that month
+        if previous_start.month == 12:
+            next_month = previous_start.replace(year=previous_start.year + 1, month=1)
+        else:
+            next_month = previous_start.replace(month=previous_start.month + 1)
+        previous_end = next_month - timedelta(days=1)
+
+        return previous_start, previous_end, "monthly"
+
+    elif date_filter == "last_quarter":
+        # Get 2 quarters ago (6 months back)
+
+        last_month = current_start.month - 6
+        year = current_start.year
+        if last_month <= 0:
+            last_month += 12
+            year -= 1
+        previous_start, previous_end = quarter_start_end(year, last_month)
+        return (
+            (
+                previous_start.date()
+                if hasattr(previous_start, "date")
+                else previous_start
+            ),
+            previous_end.date() if hasattr(previous_end, "date") else previous_end,
+            "quarterly",
+        )
+
+    elif date_filter == "last_finance":
+        # Get 2 financial years ago
+        if current_start.month >= 4:
+            previous_start = current_start.replace(
+                year=current_start.year - 2, month=4, day=1
+            )
+            previous_end = current_start.replace(
+                year=current_start.year - 1, month=3, day=31
+            )
+        else:
+            previous_start = current_start.replace(
+                year=current_start.year - 3, month=4, day=1
+            )
+            previous_end = current_start.replace(
+                year=current_start.year - 2, month=3, day=31
+            )
+        return previous_start, previous_end, "yearly"
+
+    # Default: monthly (same as "this_month" case)
+    previous_start, previous_end = dates.last_month
+    return (
+        previous_start.date() if hasattr(previous_start, "date") else previous_start,
+        previous_end.date() if hasattr(previous_end, "date") else previous_end,
+        "monthly",
+    )
+
+
+def get_period_label(start_date, end_date, period_type):
+    """
+    Format a readable label for a given date range and period type.
+    """
+    if period_type == "daily":
+        return start_date.strftime("%B %d, %Y")
+    elif period_type == "monthly":
+        return f"{start_date.strftime('%B %d')} - {end_date.strftime('%B %d, %Y')}"
+    elif period_type == "quarterly":
+        return f"Q{((start_date.month - 1) // 3) + 1} {start_date.year}"
+    else:  # yearly
+        return f"FY {start_date.year}-{end_date.year}"
+
+
+def render_paginated_response(
+    request,
+    queryset,
+    table_template,
+    per_page=20,
+    pagination_template="common/_pagination.html",
+    **kwargs,
+):
+    """
+    Reusable pagination + HTML rendering helper for HTMX/AJAX.
+
+    Args:
+        request: Django request object
+        queryset: List/QuerySet to paginate
+        table_template: Path to table HTML template
+        per_page: Number of items per page
+        pagination_template: Path to pagination template (optional)
+        **kwargs: Additional context variables to pass to template
+
+    Returns:
+        JsonResponse with HTML table + pagination
+    """
+    paginator = Paginator(queryset, per_page)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        "page_obj": page_obj,
+        "total_count": paginator.count,
+    }
+    # Merge additional context from kwargs
+    context.update(kwargs)
+
+    # Render table
+    table_html = render_to_string(table_template, context, request=request)
+
+    # Render pagination if needed
+    pagination_html = ""
+    if page_obj and page_obj.paginator.num_pages > 1:
+        pagination_html = render_to_string(
+            pagination_template, context, request=request
+        )
+
+    return JsonResponse(
+        {
+            "html": table_html,
+            "pagination": pagination_html,
+            "success": True,
+        }
+    )
+
+
+def table_sorting(request, valid_sorts=None, default_sort="-id"):
+    """
+    Generalized sorting helper for multi-column sort.
+    """
+    is_mapping = isinstance(valid_sorts, dict)
+    if valid_sorts is None:
+        valid_keys = set()
+    elif is_mapping:
+        valid_keys = set(valid_sorts.keys())
+    else:
+        valid_keys = set(valid_sorts)
+
+    sort_param = request.GET.get("sort", "")
+    if not sort_param:
+        if isinstance(default_sort, str) and "," in default_sort:
+            return [s.strip() for s in default_sort.split(",")]
+        elif isinstance(default_sort, (list, tuple)):
+            return list(default_sort)
+        return [default_sort]
+
+    sort_fields = [f.strip() for f in sort_param.split(",") if f.strip()]
+    final_sorts = []
+
+    for field in sort_fields:
+        is_desc = field.startswith("-")
+        clean_field = field.lstrip("-")
+
+        if clean_field in valid_keys:
+            if is_mapping:
+                # Get the DB field from the map
+                db_field = valid_sorts[clean_field]
+                # Apply direction to the DB field
+                if is_desc:
+                    final_sorts.append(f"-{db_field}")
+                else:
+                    final_sorts.append(db_field)
+            else:
+                final_sorts.append(field)
+
+    if not final_sorts:
+        if isinstance(default_sort, str) and "," in default_sort:
+            return [s.strip() for s in default_sort.split(",")]
+        elif isinstance(default_sort, (list, tuple)):
+            return list(default_sort)
+        return [default_sort]
+
+    return final_sorts
+
+
+def build_filtered_queryset(
+    request,
+    queryset,
+    search_fields,
+    valid_sort_fields=None,
+    default_sort="-id",
+    search_param="q",
+):
+    """
+    Apply search + sort to a queryset, return filtered queryset.
+
+    Args:
+        request: Django request object
+        queryset: Base QuerySet to filter
+        search_fields: list/tuple of field names to search (uses OR within terms, AND across terms)
+        valid_sort_fields: set/dict of allowed sort fields (None = no sorting)
+        default_sort: default sort when none provided
+        search_param: GET param name for search query (default "q")
+
+    Returns:
+        Filtered and ordered QuerySet
+    """
+    qs = queryset
+    search_query = request.GET.get(search_param, "").strip()
+
+    # Search: multi-term AND split
+    if search_query:
+        terms = search_query.split()
+        filters = Q()
+        for term in terms:
+            term_filter = Q()
+            for field in search_fields:
+                term_filter |= Q(**{f"{field}__icontains": term})
+            filters &= term_filter
+        qs = qs.filter(filters)
+
+    # Sort
+    if valid_sort_fields is not None:
+        valid_sorts = table_sorting(request, valid_sort_fields, default_sort)
+        qs = qs.order_by(*valid_sorts)
+
+    return qs
+
+
+# Phone number validator - 10 digits only, no plus symbol
+phone_regex = RegexValidator(
+    regex=r"^\d{10}$",
+    message="Phone number must be exactly 10 digits (e.g., 9876543210).",
+)

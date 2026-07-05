@@ -1,0 +1,151 @@
+{% load static %}
+<!-- ═══════════════════════════════════════
+     MAIN NAVIGATION (Separate Bar)
+     ═══════════════════════════════════════ -->
+<div class="main-nav-bar">
+  <nav class="topbar-nav">
+
+    <!-- Dashboard -->
+    <div class="nav-item-wrap" id="wrap-dashboard">
+    <a href="#" class="nav-item {% if request.resolver_match.namespace == 'base' %}active{% endif %}">
+      <i data-icon="dashboard"></i>
+      <span>Dashboard</span>
+    </a>
+    </div>
+
+    <!-- Cart -->
+     {% if perms.cart.view_cart %}
+    <div class="nav-item-wrap" id="wrap-cart">
+      <div class="nav-item {% if request.resolver_match.namespace == 'cart' %}active{% endif %}">
+        <i data-icon="purchases"></i>
+        <span>Cart</span>
+        <i class="nav-arrow" data-icon="chevronDown"></i>
+      </div>
+      <div class="nav-dropdown">
+        {% if perms.cart.view_cart %}
+        <a href="{% url 'cart:list' %}" class="nav-sub-item">All Carts</a>
+        {% endif %}
+        {% if perms.cart.add_cart %}
+        <a href="{% url 'cart:create' %}" class="nav-sub-item">New Cart</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Invoice -->
+     {% if perms.invoice.view_invoice %}
+    <div class="nav-item-wrap" id="wrap-invoice">
+      <div class="nav-item {% if request.resolver_match.namespace == 'invoice' %}active{% endif %}">
+        <i data-icon="revenue"></i>
+        <span>Invoice</span>
+        <i class="nav-arrow" data-icon="chevronDown"></i>
+      </div>
+      <div class="nav-dropdown">
+        {% if perms.invoice.view_invoice %}
+        <a href="{% url 'invoice:dashboard' %}" class="nav-sub-item">Dashboard</a>
+        <a href="{% url 'invoice:list' %}" class="nav-sub-item">All Invoices</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Quotation -->
+     {% if perms.quotation.view_quotationsecession %}
+    <div class="nav-item-wrap" id="wrap-quotation">
+      <div class="nav-item {% if request.resolver_match.namespace == 'quotation' %}active{% endif %}">
+        <i data-icon="revenue"></i>
+        <span>Quotation</span>
+        <i class="nav-arrow" data-icon="chevronDown"></i>
+      </div>
+      <div class="nav-dropdown">
+        <a href="{% url 'quotation:list' %}" class="nav-sub-item">All Quotations</a>
+        {% if perms.quotation.add_quotationsecession %}
+        <a href="{% url 'quotation:create' %}" class="nav-sub-item">New Quotation</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+
+    <!-- Inventory -->
+     {% if perms.inventory.view_product %}
+    <div class="nav-item-wrap" id="wrap-inventory">
+      <div class="nav-item {% if request.resolver_match.namespace == 'inventory' %}active{% endif %}">
+        <i data-icon="vehicles"></i>
+        <span>Inventory</span>
+        <i class="nav-arrow" data-icon="chevronDown"></i>
+      </div>
+      <div class="nav-dropdown">
+        {% if perms.inventory.view_product %}
+        <a href="{% url 'inventory:list' %}" class="nav-sub-item">All Items</a>
+        {% endif %}
+        {% if perms.inventory.add_product %}
+        <a href="{% url 'inventory:add' %}" class="nav-sub-item">Add Item</a>
+        {% endif %}
+        {% if perms.inventory.view_assemblyproduct %}
+        <a href="{% url 'inventory:assembly_list' %}" class="nav-sub-item">Assembly List</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Supplier -->
+     {% if perms.supplier.view_supplier %}
+    <div class="nav-item-wrap" id="wrap-supplier">
+      <div class="nav-item {% if request.resolver_match.namespace == 'supplier' %}active{% endif %}">
+        <i data-icon="members"></i>
+        <span>Supplier</span>
+        <i class="nav-arrow" data-icon="chevronDown"></i>
+      </div>
+      <div class="nav-dropdown">
+        {% if perms.supplier.view_supplier %}
+        <a href="{% url 'supplier:list' %}" class="nav-sub-item">All Suppliers</a>
+        {% endif %}
+        {% if perms.supplier.add_supplier %}
+        <a href="{% url 'supplier:add' %}" class="nav-sub-item">Add Supplier</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    
+
+    <!-- Customers -->
+     {% if perms.customer.view_customer %}
+    <div class="nav-item-wrap" id="wrap-customer">
+      <div class="nav-item {% if request.resolver_match.namespace == 'customer' %}active{% endif %}">
+        <i data-icon="users"></i>
+        <span>Customers</span>
+        <i class="nav-arrow" data-icon="chevronDown"></i>
+      </div>
+      <div class="nav-dropdown">
+        {% if perms.customer.view_customer %}
+        <a href="{% url 'customer:list' %}" class="nav-sub-item">All Customers</a>
+        {% endif %}
+        {% if perms.customer.add_customer %}
+        <a href="{% url 'customer:add' %}" class="nav-sub-item">Add Customer</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Users -->
+     {% if perms.user.view_customuser %}
+    <div class="nav-item-wrap" id="wrap-user">
+      <div class="nav-item {% if request.resolver_match.namespace == 'user' %}active{% endif %}">
+        <i data-icon="members"></i>
+        <span>Users</span>
+        <i class="nav-arrow" data-icon="chevronDown"></i>
+      </div>
+      <div class="nav-dropdown">
+        {% if perms.user.view_customuser %}
+        <a href="{% url 'user:list' %}" class="nav-sub-item">All Users</a>
+        {% endif %}
+        {% if perms.user.add_customuser %}
+        <a href="{% url 'user:add' %}" class="nav-sub-item">Add User</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </nav>
+</div>

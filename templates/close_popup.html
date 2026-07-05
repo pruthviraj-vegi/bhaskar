@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Success - Closing Window</title>
+    <style>
+        body {
+            font-family: 'Instrument Sans', sans-serif;
+            background: #0f172a;
+            color: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div>
+        <h2>Creation Successful</h2>
+        <p>This window will close automatically...</p>
+    </div>
+    <script>
+        if (window.opener && !window.opener.closed) {
+            window.opener.postMessage({
+                type: 'quickCreateSuccess',
+                id: '{{ object.id }}',
+                text: '{{ object|escapejs }}',
+                model: '{{ model_name }}'
+            }, '*');
+        }
+        window.close();
+    </script>
+</body>
+</html>

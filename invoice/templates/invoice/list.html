@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}All Invoices{% endblock %}
+
+{% block content %}
+<!-- Page header -->
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Invoices</h1>
+    <p class="page-sub">Manage all invoices</p>
+  </div>
+  <div class="breadcrumb">
+    Dashboard <i data-icon="chevronRight"></i> <span>Invoices</span>
+  </div>
+</div>
+
+<!-- Content -->
+<div class="content">
+
+  <!-- ══ INVOICES ══ -->
+  <div class="page active" id="page-invoices">
+    <form class="page-actions" id="invoice-search-form" onsubmit="return false;">
+      <div class="filters-row">
+        <div class="search-box search-box-wide">
+          <i data-icon="search"></i>
+          <input type="search" name="q" placeholder="Search invoices…" autofocus autocomplete="off"/>
+        </div>
+        <button type="submit" class="btn btn-primary" onclick="reloadTable('invoice-table')">
+          <i data-icon="search"></i>
+          Search
+        </button>
+      </div>
+    </form>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Invoice Records</div>
+        <span class="info-secondary">{{ invoices_count }} invoices total</span>
+      </div>
+      <div class="table-wrap">
+        <table id="invoice-table">
+          <thead>
+            <tr>
+              <th data-sort="id">ID</th>
+              <th data-sort="customer__name">Customer</th>
+              <th data-sort="invoice_type">Type</th>
+              <th>Payment</th>
+              <th data-sort="total_amount" style="text-align: right;">Total</th>
+              <th>Store</th>
+              <th data-sort="created_at">Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="invoice-table-body">
+            <!-- Data loaded via AJAX (fetchData.js) -->
+            <tr>
+                <td colspan="8" class="text-center loading-cell">
+                    <div class="loading">
+                        <i class="fas fa-spinner fa-spin"></i> Loading...
+                    </div>
+                </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <!-- Pagination Container -->
+      <div id="invoice-table_pagination"></div>
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        initTableAjax(
+            'invoice-search-form', 
+            'invoice-table', 
+            '{% url "invoice:fetch" %}', 
+            {
+                method: 'GET',
+                debounceDelay: 400,
+                placeholder: 'Loading invoices...'
+            }
+        );
+        initTableSorting('invoice-table');
+    });
+</script>
+{% endblock extra_js %}

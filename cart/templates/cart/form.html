@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}Cart Settings - AeroSeva{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">New Cart</h1>
+    <p class="page-sub">Create a new working tab/cart to start ringing up products.</p>
+  </div>
+  <div class="breadcrumb">
+    <a href="{% url 'cart:list' %}">Carts</a> <i data-icon="chevronRight"></i> <span>New Cart</span>
+  </div>
+</div>
+
+<div class="content">
+  <div class="page active">
+    <div class="form-container">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Cart Setup</div>
+            <div class="card-sub">Name this cart for future reference</div>
+          </div>
+          <a href="{% url 'cart:list' %}" class="btn btn-secondary btn-sm">Cancel</a>
+        </div>
+        
+        <div class="card-body form-body">
+          <form method="post" novalidate>
+            {% csrf_token %}
+
+            <div class="form-section">
+              <div class="form-grid">
+                <div class="form-group" style="grid-column: 1 / -1;">
+                  <label class="form-label" for="{{ form.name.id_for_label }}">
+                    Session Name / Customer Ref <span>*</span>
+                  </label>
+                  {{ form.name }}
+                  {% if form.name.errors %}
+                  <div class="form-feedback"><div class="form-error">{{ form.name.errors }}</div></div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+
+            <div class="divider form-divider"></div>
+            
+            <div class="form-actions">
+              <a href="{% url 'cart:list' %}" class="btn btn-secondary">Discard</a>
+              <button type="submit" class="btn btn-primary">Open Cart</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

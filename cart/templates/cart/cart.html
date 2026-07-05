@@ -1,0 +1,360 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}Cart Terminal - {{ cart.name }}{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Cart Terminal</h1>
+    <p class="page-sub">Ringing up sale for <strong>{{ cart.name }}</strong></p>
+  </div>
+  <div class="breadcrumb">
+    <a href="{% url 'cart:list' %}">Carts</a> <i data-icon="chevronRight"></i> <span>Cart Terminal</span>
+  </div>
+</div>
+
+<div class="content">
+  <div class="page active">
+    <!-- Split Layout container similar to Jobcard setup -->
+    <div style="display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap;">
+
+      <!-- ── MAIN CART FORM (65%) ── -->
+      <div style="flex: 1; min-width: 0;">
+        <div class="card" style="min-height: 500px; display: flex; flex-direction: column;">
+          <div class="card-header" style="border-bottom: none; align-items: center;">
+            <div>
+              <div class="card-title" style="margin-bottom: 4px; color: var(--text3); font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Total Amount</div>
+              <div class="td-mono" id="cart-subtotal" style="font-size: 28px; font-weight: 700; color: var(--accent);">{{ total_amount|currency }}</div>
+            </div>
+            <div>
+              <a href="{% url 'invoice:create_from_cart' cart.pk %}" class="btn btn-primary" id="proceed-to-bill" style="padding: 12px 20px; font-size: 16px; border-radius: var(--r-md); {% if not items %}pointer-events: none; opacity: 0.5;{% endif %}">Proceed to Bill <i data-icon="chevronRight" style="margin-left: 8px;"></i></a>
+            </div>
+          </div>
+
+          <div style="padding: 0 16px 16px 16px; border-bottom: 1px solid var(--border); position: relative;">
+            <div style="position: relative; display: flex; align-items: center; background: var(--surface); border: 2px solid var(--accent); border-radius: var(--r-sm); padding: 0 12px; box-shadow: 0 0 0 3px var(--accent-dim);">
+              <i data-icon="search" style="color: var(--text3); width: 20px; margin-right: 8px;"></i>
+              <input type="text" id="pos-barcode" class="form-input" style="border: none; background: transparent; padding: 12px; flex:1; font-size: 16px; font-weight: 500;" placeholder="Search Product or Scan Barcode…" autocomplete="off" autofocus>
+            </div>
+            
+            <!-- Autocomplete Dropdown Box -->
+            <div id="pos-search-results" style="display: none; position: absolute; top: calc(100% - 16px); left: 16px; right: 16px; z-index: 50; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-sm); box-shadow: var(--shadow-lg); max-height: 400px; overflow-y: auto;">
+            </div>
+          </div>
+
+          <div class="table-wrap" style="flex: 1;">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 40%;">Product</th>
+                  <th style="text-align: right; width: 15%;">Selling Price</th>
+                  <th style="text-align: center; width: 15%;">Price</th>
+                  <th style="text-align: center; width: 15%;">Qty</th>
+                  <th style="text-align: right; width: 15%;">Total</th>
+                  <th style="width: 50px;"></th>
+                </tr>
+              </thead>
+              <tbody id="cart-tbody">
+                {% include "cart/cart_tbody.html" %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Setup CSRF logic for Fetch API natively
+  function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+          const cookies = document.cookie.split(';');
+          for (let i = 0; i < cookies.length; i++) {
+              const cookie = cookies[i].trim();
+              if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                  cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                  break;
+              }
+          }
+      }
+      return cookieValue;
+  }
+  const csrftoken = getCookie('csrftoken');
+
+  // Search & Autocomplete Logic combined with Barcode
+  const barcodeInput = document.getElementById('pos-barcode');
+  const resultsBox = document.getElementById('pos-search-results');
+  let debounceTimer = null;
+  let selectedIndex = -1;
+
+  if (barcodeInput) {
+      // 1. Text Search (Autocomplete Dropdown)
+      barcodeInput.addEventListener('input', function() {
+        clearTimeout(debounceTimer);
+        let q = this.value.trim();
+        selectedIndex = -1; // Reset selection
+
+        if (q.length < 2) {
+          resultsBox.style.display = 'none';
+          return;
+        }
+
+        resultsBox.style.display = 'block';
+        resultsBox.innerHTML = '<div style="padding: 16px; text-align: center; color: var(--text3);">Searching…</div>';
+
+        debounceTimer = setTimeout(function() {
+          fetch('{% url "cart:api_product_search" %}?q=' + encodeURIComponent(q) + '&cart_id={{ cart.pk }}')
+            .then(r => r.json())
+            .then(data => {
+              if (!data.results || data.results.length === 0) {
+                resultsBox.innerHTML = `
+                  <div style="padding: 16px; text-align: center; color: var(--text3);">
+                    No products found.
+                  </div>`;
+                return;
+              }
+
+              let html = '';
+              data.results.forEach(r => {
+                const isAssembly = r.type === 'assembly';
+                const stockColor = r.stock > 0 ? 'var(--green)' : 'var(--red)';
+                const badge = isAssembly ? '<span class="badge" style="background: var(--accent); color: #fff;">Drone</span>' : '<span style="font-weight: 600; font-size: 13px; color: ' + stockColor + ';">Available: ' + r.stock + '</span>';
+                const priceDisplay = isAssembly
+                  ? '₹ ' + Number(r.selling_price).toLocaleString('en-IN', {minimumFractionDigits: 2})
+                  : '<span class="badge" style="background: var(--surface2); color: var(--text2);">₹ ' + r.selling_price + '</span>';
+                html += `
+                  <div class="search-item" data-id="${r.id}" data-type="${r.type}" style="padding: 12px 16px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='var(--surface2)'" onmouseout="if(!this.classList.contains('active-search')) this.style.background='transparent'" onclick="addToCart(${r.id}, '${r.type}')">
+                    <div style="display: flex; justify-content: space-between; align-items:center; margin-bottom: 4px;">
+                      <strong style="color: var(--text); font-size: 14px;">${r.part_name}</strong>
+                      ${badge}
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items:center; font-size: 12px; color: var(--text3);">
+                      <span>${r.barcode ? r.barcode : r.company_name}</span>
+                      ${priceDisplay}
+                    </div>
+                    ${isAssembly ? '<div style="font-size: 11px; color: var(--text3); margin-top: 4px;">' + r.item_count + ' items · Qty ' + r.total_qty + ' · ₹ ' + Number(r.total_price).toLocaleString('en-IN', {minimumFractionDigits: 2}) + '</div>' : ''}
+                  </div>`;
+              });
+
+              resultsBox.innerHTML = html;
+            })
+            .catch(() => {
+              resultsBox.innerHTML = '<div style="padding:16px;text-align:center;color:var(--red);">Search failed.</div>';
+            });
+        }, 300);
+      });
+
+      // 2. Keyboard Navigation & Scanner (Enter Key)
+      barcodeInput.addEventListener('keydown', function(e) {
+          const items = resultsBox.querySelectorAll('.search-item');
+          
+          if (e.key === 'ArrowDown') {
+              e.preventDefault();
+              if (items.length > 0) {
+                  selectedIndex = (selectedIndex < items.length - 1) ? selectedIndex + 1 : 0;
+                  updateSearchHighlight(items);
+              }
+          } else if (e.key === 'ArrowUp') {
+              e.preventDefault();
+              if (items.length > 0) {
+                  selectedIndex = (selectedIndex > 0) ? selectedIndex - 1 : items.length - 1;
+                  updateSearchHighlight(items);
+              }
+          } else if (e.key === 'Enter') {
+              e.preventDefault();
+              
+              // If we have an item actively highlighted, add IT instead of submitting a raw barcode
+              if (selectedIndex > -1 && items.length > 0) {
+                  const selectedItem = items[selectedIndex];
+                  const selectedId = selectedItem.getAttribute('data-id');
+                  const selectedType = selectedItem.getAttribute('data-type');
+                  if (selectedId) addToCart(selectedId, selectedType);
+                  return;
+              }
+              
+              // Otherwise, proceed as standard barcode scanner
+              let bc = this.value.trim();
+              if(!bc) return;
+              
+              // Hide dropdown if it's open, because they scanned
+              resultsBox.style.display = 'none';
+              
+              // Lock input briefly
+              this.disabled = true;
+              
+              fetch('{% url "cart:api_add_by_barcode" cart.pk %}', {
+                  method: 'POST',
+                  headers: { 'X-CSRFToken': csrftoken, 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ barcode: bc })
+              })
+              .then(r => r.json())
+              .then(res => {
+                  this.disabled = false;
+                  this.value = '';
+                  this.focus();
+                  if (res.success) {
+                      refreshCartDOM(res);
+                  } else {
+                      alert("Error: " + res.error);
+                  }
+              })
+              .catch(() => {
+                  this.disabled = false;
+                  this.value = '';
+                  this.focus();
+                  alert("Network error.");
+              });
+          }
+      });
+  }
+
+  function updateSearchHighlight(items) {
+      items.forEach((item, index) => {
+          if (index === selectedIndex) {
+              item.style.background = 'var(--surface2)';
+              item.classList.add('active-search');
+          } else {
+              item.style.background = 'transparent';
+              item.classList.remove('active-search');
+          }
+      });
+  }
+
+  // Hide dropdown if clicked outside
+  document.addEventListener('click', function(e) {
+      if (barcodeInput && resultsBox && !barcodeInput.contains(e.target) && !resultsBox.contains(e.target)) {
+          resultsBox.style.display = 'none';
+      }
+  });
+
+  function refreshCartDOM(res) {
+      document.getElementById('cart-tbody').innerHTML = res.html;
+      const formattedTotal = Number(res.total_amount).toLocaleString('en-IN', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+      document.getElementById('cart-subtotal').innerHTML = formattedTotal;
+
+      // Enable/disable "Proceed to Bill" button based on whether cart has items
+      const btn = document.getElementById('proceed-to-bill');
+      if (btn) {
+          if (res.total_amount > 0) {
+              btn.style.pointerEvents = 'auto';
+              btn.style.opacity = '1';
+          } else {
+              btn.style.pointerEvents = 'none';
+              btn.style.opacity = '0.5';
+          }
+      }
+
+      bindCartEvents();
+      if(barcodeInput) barcodeInput.focus();
+  }
+
+  function bindCartEvents() {
+      if (typeof renderIcons === 'function') renderIcons();
+      document.querySelectorAll('.item-price').forEach(el => {
+          el.addEventListener('blur', function() {
+              const itemId = this.dataset.id;
+              const newPrice = this.innerText.trim();
+              fetch(`/cart/api/item/${itemId}/update/`, {
+                  method: 'POST',
+                  headers: { 'X-CSRFToken': csrftoken, 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ price: newPrice })
+              })
+              .then(r => r.json())
+              .then(res => {
+                  if(res.success) refreshCartDOM(res);
+              });
+          });
+          el.addEventListener('keydown', function(e) {
+              if(e.key === 'Enter') {
+                  e.preventDefault();
+                  this.blur();
+              }
+          });
+      });
+  }
+
+  // API Call: Add to Cart
+  function addToCart(productId, itemType) {
+      itemType = itemType || 'product';
+      // Hide results box and reset input cleanly before processing
+      if (resultsBox) resultsBox.style.display = 'none';
+      if (barcodeInput) {
+          barcodeInput.value = '';
+          barcodeInput.focus();
+          selectedIndex = -1;
+      }
+
+      fetch('{% url "cart:api_add_item" cart.pk %}', {
+          method: 'POST',
+          headers: { 'X-CSRFToken': csrftoken, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ product_id: productId, type: itemType, quantity: 1 })
+      })
+      .then(r => r.json())
+      .then(res => {
+          if (res.success) {
+              refreshCartDOM(res);
+          } else {
+              alert("Error: " + res.error);
+          }
+      });
+  }
+
+  // API Call: Update Quantity
+  function setQty(itemId, newQty) {
+      if(newQty < 0) return;
+      fetch(`/cart/api/item/${itemId}/update/`, {
+          method: 'POST',
+          headers: { 'X-CSRFToken': csrftoken, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ quantity: newQty })
+      })
+      .then(r => r.json())
+      .then(res => {
+          if (res.success) {
+              refreshCartDOM(res);
+          } else {
+              alert("Error: " + res.error);
+          }
+      });
+  }
+
+  function updateQty(itemId, delta) {
+      const input = document.getElementById(`qty-${itemId}`);
+      let newVal = parseFloat(input.value) + delta;
+      if (newVal < 0) newVal = 0;
+      setQty(itemId, newVal);
+  }
+
+  // API Call: Remove Item
+  function removeItem(itemId) {
+      fetch(`/cart/api/item/${itemId}/remove/`, {
+          method: 'POST',
+          headers: { 'X-CSRFToken': csrftoken, 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+      })
+      .then(r => r.json())
+      .then(res => {
+          if (res.success) {
+              refreshCartDOM(res);
+          }
+      });
+  }
+
+  // Initialization
+  document.addEventListener("DOMContentLoaded", () => {
+     if(barcodeInput) barcodeInput.focus(); 
+     bindCartEvents();
+  });
+</script>
+{% endblock %}

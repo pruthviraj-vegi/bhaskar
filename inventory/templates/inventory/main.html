@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}Inventory{% endblock %}
+
+{% block content %}
+<!-- Page header -->
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Inventory</h1>
+    <p class="page-sub">Manage products &amp; stock</p>
+  </div>
+  <div class="breadcrumb">
+    Dashboard <i data-icon="chevronRight"></i> <span>Inventory</span>
+  </div>
+</div>
+
+<!-- Content -->
+<div class="content">
+
+  <!-- ══ PRODUCTS ══ -->
+  <div class="page active" id="page-products">
+    <form class="page-actions" id="product-search-form" onsubmit="return false;">
+      <div class="filters-row">
+        <div class="search-box search-box-wide">
+          <i data-icon="search"></i>
+          <input type="search" name="q" value="{{ search_query }}" placeholder="Search products…" autofocus autocomplete="off"/>
+        </div>
+        <button type="submit" class="btn btn-primary" onclick="reloadTable('product-table')">
+          <i data-icon="search"></i>
+          Search
+        </button>
+      </div>
+      {% if perms.inventory.add_product %}
+      <a href="{% url 'inventory:add' %}" class="btn btn-primary">
+        <i data-icon="plus"></i>
+        Add Product
+      </a>
+      {% endif %}
+    </form>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Product Records</div>
+        <span class="info-secondary">{{ products_count }} products registered</span>
+      </div>
+      <div class="table-wrap">
+        <table id="product-table">
+          <thead>
+            <tr>
+              <th data-sort="company_name">Product</th>
+              <th data-sort="barcode">Barcode</th>
+              <th style="text-align:right;">Qty</th>
+              <th>UOM</th>
+              <th data-sort="purchased_price" style="text-align:right;">Cost</th>
+              <th data-sort="selling_price" style="text-align:right;">Sell</th>
+              <th>Status</th>
+              <th style="text-align:right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="product-table-body">
+            <!-- Data loaded via AJAX (fetchData.js) -->
+            <tr>
+                <td colspan="8" class="text-center loading-cell">
+                    <div class="loading">
+                        <i class="fas fa-spinner fa-spin"></i> Loading...
+                    </div>
+                </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <!-- Pagination Container -->
+      <div id="product-table_pagination"></div>
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        initTableAjax(
+            'product-search-form', 
+            'product-table', 
+            '{% url "inventory:fetch" %}', 
+            {
+                method: 'GET',
+                debounceDelay: 400,
+                placeholder: 'Loading products...'
+            }
+        );
+        initTableSorting('product-table');
+    });
+</script>
+{% endblock extra_js %}

@@ -1,0 +1,37 @@
+{% load custom_filters %}
+{% for item in items %}
+<tr id="cart-row-{{ item.pk }}">
+  <td>
+    <div style="font-weight: 500;">{{ item.product.part_name }}</div>
+    <div style="font-size: 12px; color: var(--text3);">
+      {{ item.product.barcode|default:item.product.company_name }}
+      {% if item.assembly_source %}
+        &middot; <span class="badge" style="background: var(--accent); color: #fff; font-size: 10px; padding: 2px 6px;">{{ item.assembly_source.name }} Node</span>
+      {% endif %}
+    </div>
+  </td>
+  <td style="text-align: right;" class="td-mono">
+    {{ item.product.selling_price|currency }}
+  </td>
+  <td style="text-align: center;">
+    <div class="td-mono"><span class="item-price" data-id="{{ item.pk }}" contenteditable="true" style="border-bottom: 1px solid var(--accent); padding: 6px 12px; outline: none; background: var(--surface2); border-radius: var(--r-sm); min-width: 80px; display: inline-block; text-align: center; font-weight: 500; cursor: text;">{{ item.price|floatformat:2 }}</span></div>
+  </td>
+  <td style="text-align: center;">
+    <input type="text" inputmode="numeric" id="qty-{{ item.pk }}" class="td-mono" value="{{ item.quantity }}" style="width: 80px; padding: 6px 12px; border: 1px solid var(--border); border-radius: var(--r-sm); text-align: center; background: var(--surface2); color: var(--text); outline: none; font-weight: 600; font-size: 14px;" onchange="setQty({{ item.pk }}, this.value)">
+  </td>
+  <td style="text-align: right;" class="td-mono" style="font-weight: 500;">
+    {{ item.total_price|currency }}
+  </td>
+  <td style="text-align: right;">
+    <button class="action-btn delete" onclick="removeItem({{ item.pk }})"><i data-icon="trash"></i></button>
+  </td>
+</tr>
+{% empty %}
+<tr id="empty-cart-row">
+  <td colspan="6" style="text-align: center; padding: 60px;">
+    <i data-icon="sale" style="width: 48px; height: 48px; color: var(--text3); margin-bottom: 16px; display: inline-block;"></i>
+    <div style="font-size: 16px; font-weight: 500;">Cart is Empty</div>
+    <div style="color: var(--text3); font-size: 14px;">Search and add products from the lookup panel.</div>
+  </td>
+</tr>
+{% endfor %}

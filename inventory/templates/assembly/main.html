@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}Assembly{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Assembly</h1>
+    <p class="page-sub">Manage assembled products</p>
+  </div>
+  <div class="breadcrumb">
+    Dashboard <i data-icon="chevronRight"></i> <span>Assembly</span>
+  </div>
+</div>
+
+<div class="content">
+  <div class="page active">
+    <form class="page-actions" id="assembly-search-form" onsubmit="return false;">
+      <div class="filters-row">
+        <div class="search-box search-box-wide">
+          <i data-icon="search"></i>
+          <input type="search" name="q" value="{{ search_query }}" placeholder="Search assembly products…" autofocus autocomplete="off"/>
+        </div>
+        <button type="submit" class="btn btn-primary" onclick="reloadTable('assembly-table')">
+          <i data-icon="search"></i>
+          Search
+        </button>
+      </div>
+      {% if perms.inventory.add_assemblyproduct %}
+      <a href="{% url 'inventory:assembly_add' %}" class="btn btn-primary">
+        <i data-icon="plus"></i>
+        Add Assembly Product
+      </a>
+      {% endif %}
+    </form>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Assembly Products</div>
+        <span class="info-secondary">{{ assemblies_count }} products registered</span>
+      </div>
+      <div class="table-wrap">
+        <table id="assembly-table">
+          <thead>
+            <tr>
+              <th>Assembly</th>
+              <th>Description</th>
+              <th>Items</th>
+              <th>Qty</th>
+              <th>Possible</th>
+              <th>Amount</th>
+              <th style="text-align:right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="assembly-table-body">
+            <tr>
+                <td colspan="7" class="text-center loading-cell">
+                    <div class="loading">
+                        <i class="fas fa-spinner fa-spin"></i> Loading...
+                    </div>
+                </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div id="assembly-table_pagination"></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        initTableAjax(
+            'assembly-search-form',
+            'assembly-table',
+            '{% url "inventory:assembly_fetch" %}',
+            {
+                method: 'GET',
+                debounceDelay: 400,
+                placeholder: 'Loading assembly products...'
+            }
+        );
+        initTableSorting('assembly-table');
+    });
+</script>
+{% endblock extra_js %}

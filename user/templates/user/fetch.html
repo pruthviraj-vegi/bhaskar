@@ -1,0 +1,57 @@
+{% load static %}
+{% load custom_filters %}
+
+{% for u in page_obj %}
+<tr>
+    <!-- User -->
+    <td>
+    <div class="cell-profile">
+        <div class="avatar blue">
+        {{ u.first_name|first|upper }}
+        </div>
+        <div class="info-stacked">
+        <div class="info-primary">{{ u.full_name }}</div>
+        <div class="info-secondary">{{ u.profile_id|default:"-" }}</div>
+        </div>
+    </div>
+    </td>
+    <!-- Phone -->
+    <td class="td-mono">{{ u.phone_number|phone_number|default:"-" }}</td>
+    <!-- Email -->
+    <td class="info-secondary">{{ u.email|default:"-" }}</td>
+    <!-- Status -->
+    <td>
+    {% if u.is_active %}
+        <span class="badge badge-success">Active</span>
+    {% else %}
+        <span class="badge badge-danger">Inactive</span>
+    {% endif %}
+    {% if u.is_staff %}
+        <span class="badge" style="background: var(--accent-dim); color: var(--accent);">Staff</span>
+    {% endif %}
+    </td>
+    <!-- Joined -->
+    <td class="info-secondary">
+    {{ u.date_joined|date:"M d, Y" }}
+    </td>
+    <!-- Actions -->
+    <td>
+    <div class="action-buttons">
+        {% if perms.user.change_customuser %}
+        <a href="{% url 'user:edit' u.pk %}" class="action-btn edit" title="Edit">
+        <i data-icon="edit"></i>
+        </a>
+        {% endif %}
+        {% if perms.user.delete_customuser %}
+        <a href="{% url 'user:delete' u.pk %}" class="action-btn delete" title="Delete">
+        <i data-icon="trash"></i>
+        </a>
+        {% endif %}
+    </div>
+    </td>
+</tr>
+{% empty %}
+<tr>
+    <td colspan="6" class="info-secondary text-center">No users found.</td>
+</tr>
+{% endfor %}

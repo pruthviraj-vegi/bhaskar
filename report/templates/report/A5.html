@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+{% load static %}
+{% load custom_filters %}
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="A5 Invoice - My Billing" />
+    <meta name="keywords" content="invoice, billing, A5" />
+    <title>{{ details.customer.name }} - Invoice {{ details.invoice_number }}</title>
+    <link rel="stylesheet" href="{% static 'styles/A5.css' %}" />
+    <link rel="shortcut icon"
+          type="image/ico"
+          href="{% static 'images/favicon.ico' %}" />
+  </head>
+  <body>
+    <div class="container">
+      <div class="top-section">
+        <div class="header-data">
+          <!-- Left: Shop Details -->
+          <div class="shop-data">
+            <div class="shop-details">
+              <div class="shop-name">Agri Drones</div>
+              <p class="shop-address">
+                {{ BUSINESS_INFO.first_line }}
+                {% if BUSINESS_INFO.second_line %}, {{ BUSINESS_INFO.second_line }}{% endif %}
+              </p>
+              <p class="shop-address">
+                {{ BUSINESS_INFO.city }},
+              </p>
+              <p class="shop-address">
+                {{ BUSINESS_INFO.state }} - {{ BUSINESS_INFO.pincode }}
+              </p>
+              {% if BUSINESS_INFO.gst_no %}
+                <p class="text-bold">GST: {{ BUSINESS_INFO.gst_no }}</p>
+              {% endif %}
+              {% if BUSINESS_INFO.phone %}
+                <p class="text-bold">Phone: {{ BUSINESS_INFO.phone }}{% if BUSINESS_INFO.phone_two %}, {{ BUSINESS_INFO.phone_two }}{% endif %}</p>
+              {% endif %}
+            </div>
+          </div>
+          <!-- Middle: Logo -->
+          <div class="logo-section">
+            <div class="logo">
+              <img src="{% static 'images/logo.svg' %}"
+                   alt="Logo"
+                   height="60"
+                   width="60" />
+            </div>
+          </div>
+          <!-- Right: Invoice Details -->
+          <div class="invoice-data">
+            <div class="invoice-content">
+              <p>
+                Invoice No : <span class="invoice-value">#{{ details.id }}</span>
+              </p>
+              <p>
+                Date : <span class="invoice-value">{{ details.created_at|date }}</span>
+              </p>
+              <p>
+                Mode : <span class="invoice-value">{{ details.get_payment_mode_display }}</span>
+              </p>
+            </div>
+          </div>
+        </div>
+        <!-- Bottom: Customer Details -->
+        {% if report_config.show_customer_details %}
+          <div class="customer-section">
+            <div class="customer-content">
+              <h1>{{ details.customer.name }}</h1>
+              <p>{{ details.customer.address|truncatechars:20 }}</p>
+            </div>
+          </div>
+        {% endif %}
+        <div class="content-table">
+          <div class="table-logo">
+            <img src="{% static 'images/logo.svg' %}"
+                 alt="Logo"
+                 height="200"
+                 width="200" />
+          </div>
+          <table class="items-table">
+            <thead>
+              <tr>
+                <th >S.No</th>
+                <th class="text-center">Description</th>
+                <th>Qty</th>
+                <th>Rate</th>
+                <th>Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in values %}
+                <tr>
+                  <td>{{ forloop.counter }}</td>
+                  <td >{{ item.product.company_name|default:"-" }} - {{ item.product.part_name|default:"-" }}</td>
+                  <td>{{ item.quantity }}</td>
+                  <td>{{ item.price|currency }}</td>
+                  <td>{{ item.total_amount|currency }}</td>
+                </tr>
+              {% endfor %}
+              <!-- Fill remaining space with empty rows for consistent printing -->
+              <tr class="empty-space">
+                <td colspan="5"></td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="4" class="font-semibold text-right">Net Total</td>
+                <td class="text-right highlight font-bold">{{ details.get_total_amount|currency }}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+      <div class="bottom-section">
+        <div class="calculation-content">
+          <div class="amount-content">
+            <div class="terms_title">* Rupee In Words *</div>
+            <div class="font-semibold">{{ details.get_total_amount|currencyToWord }}</div>
+          </div>
+        </div>
+        <div class="total-amount-content">
+          <div>
+            <p>
+              <span class="text-gray-700">Subtotal:</span>
+              <span class="font-semibold">
+                {{ details.get_subtotal_amount|currency }}
+              </span>
+            </p>
+            {% if details.discount_amount > 0 %}
+              <p>
+                <span class="text-gray-700">Discount:</span>
+                <span class="font-semibold text-gray-600">- {{ details.discount_amount|currency }}</span>
+              </p>
+            {% endif %}
+            {% if details.advance_amount > 0 %}
+              <p>
+                <span class="text-gray-700">Advance:</span>
+                <span class="font-semibold text-gray-600">- {{ details.advance_amount|currency }}</span>
+              </p>
+            {% endif %}
+          </div>
+          <hr>
+          <div>
+            <p class="highlight">
+              <span>Total:</span>
+              <span>{{ details.get_final_amount|currency }}</span>
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="footer-content">
+        <div class="terms-qrcode-content">
+          <div class="terms-content full-width">
+              <div class="terms-conditions">
+                <h3 class="terms_title">Terms &amp; Conditions</h3>
+                <div class="terms_subject">
+                    <em>1. All subjects to local jurisdiction</em>
+                    <em>2. Goods once sold will not be taken back</em>
+                    <em>3. E. &amp; O.E</em>
+                </div>
+              </div>
+          </div>
+        </div>
+        <div class="footer-note-content">
+            <div class="thank-you">
+              <h3>Thank You Please Visit Again</h3>
+              <p>This is Computer Generated Invoice, Signature not Required</p>
+            </div>  
+        </div>
+      </div>
+    </div>
+    <script src="{% static 'js/print.js' %}"></script>
+  </body>
+</html>

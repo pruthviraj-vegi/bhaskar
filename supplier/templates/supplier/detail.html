@@ -1,0 +1,263 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<!-- Page header -->
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ supplier.name }}</h1>
+    <p class="page-sub">Supplier details, invoices &amp; payments</p>
+  </div>
+  <div class="breadcrumb">
+    <a href="{% url 'supplier:list' %}">Suppliers</a> <i data-icon="chevronRight"></i> <span>{{ supplier.name }}</span>
+  </div>
+</div>
+
+<!-- Content -->
+<div class="content">
+  <div class="page active">
+    <div class="pur-detail-layout">
+
+      <!-- ═══ MAIN: Invoices & Payments ═══ -->
+      <div class="jc-detail-main">
+
+        <!-- ── Invoices Table ── -->
+        <div class="card" style="margin-bottom: 20px;">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Invoices</div>
+              <span class="info-secondary">{{ invoices|length }} records</span>
+            </div>
+            {% if perms.supplier.add_supplierinvoice %}
+            <a href="{% url 'supplier:add_invoice' supplier.pk %}" class="btn btn-primary btn-sm">
+              <i data-icon="plus"></i> Add Invoice
+            </a>
+            {% endif %}
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Invoice #</th>
+                  <th>Date</th>
+                  <th>Type</th>
+                  <th style="text-align:right;">Sub Total</th>
+                  <th style="text-align:right;">Tax</th>
+                  <th style="text-align:right;">Total</th>
+                  <th style="text-align:right;">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for inv in invoices %}
+                <tr>
+                  <td class="td-mono">{{ inv.invoice_number }}</td>
+                  <td class="info-secondary">{{ inv.invoice_date|date:"M d, Y" }}</td>
+                  <td>
+                    {% if inv.invoice_type == "GST_APPLICABLE" %}
+                      <span class="badge badge-progress">GST</span>
+                    {% else %}
+                      <span class="badge badge-pending">Local</span>
+                    {% endif %}
+                  </td>
+                  <td class="td-mono" style="text-align:right;">{{ inv.sub_total|currency }}</td>
+                  <td class="td-mono" style="text-align:right;">
+                    {% if inv.gst_type == "CGST_SGST" %}
+                      {{ inv.cgst_amount|currency }} × 2
+                    {% else %}
+                      {{ inv.igst_amount|currency }}
+                    {% endif %}
+                  </td>
+                  <td class="td-mono" style="text-align:right;">{{ inv.total_amount|currency }}</td>
+                  <td style="text-align:right;">
+                    <div class="action-buttons" style="justify-content:flex-end;">
+                      {% if perms.supplier.change_supplierinvoice %}
+                      <a href="{% url 'supplier:edit_invoice' inv.pk %}" class="action-btn edit" title="Edit">
+                        <i data-icon="edit"></i>
+                      </a>
+                      {% endif %}
+                      {% if perms.supplier.delete_supplierinvoice %}
+                      <a href="{% url 'supplier:delete_invoice' inv.pk %}" class="action-btn delete" title="Delete">
+                        <i data-icon="trash"></i>
+                      </a>
+                      {% endif %}
+                    </div>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="7" class="info-secondary text-center">No invoices found.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ── Payments Table ── -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Payments</div>
+              <span class="info-secondary">{{ payments|length }} records</span>
+            </div>
+            {% if perms.supplier.add_supplierpayment %}
+            <a href="{% url 'supplier:add_payment' supplier.pk %}" class="btn btn-primary btn-sm">
+              <i data-icon="plus"></i> Add Payment
+            </a>
+            {% endif %}
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Method</th>
+                  <th>Transaction ID</th>
+                  <th style="text-align:right;">Amount</th>
+                  <th style="text-align:right;">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for pmt in payments %}
+                <tr>
+                  <td class="info-secondary">{{ pmt.payment_date|date:"M d, Y" }}</td>
+                  <td>
+                    {% if pmt.method == "CASH" %}
+                      <span class="badge badge-done">Cash</span>
+                    {% elif pmt.method == "UPI" %}
+                      <span class="badge badge-progress">UPI</span>
+                    {% else %}
+                      <span class="badge badge-pending">Bank Transfer</span>
+                    {% endif %}
+                  </td>
+                  <td class="td-mono info-secondary">{{ pmt.transaction_id|default:"-" }}</td>
+                  <td class="td-mono" style="text-align:right;">{{ pmt.amount|currency }}</td>
+                  <td style="text-align:right;">
+                    <div class="action-buttons" style="justify-content:flex-end;">
+                      {% if perms.supplier.change_supplierpayment %}
+                      <a href="{% url 'supplier:edit_payment' pmt.pk %}" class="action-btn edit" title="Edit">
+                        <i data-icon="edit"></i>
+                      </a>
+                      {% endif %}
+                      {% if perms.supplier.delete_supplierpayment %}
+                      <a href="{% url 'supplier:delete_payment' pmt.pk %}" class="action-btn delete" title="Delete">
+                        <i data-icon="trash"></i>
+                      </a>
+                      {% endif %}
+                    </div>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="5" class="info-secondary text-center">No payments found.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ═══ SIDEBAR: Supplier Info ═══ -->
+      <div class="jc-detail-sidebar">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Supplier Info</div>
+          </div>
+          <div class="card-body">
+            <div class="jc-section" style="gap: 14px;">
+
+              <!-- Avatar & Name -->
+              <div style="text-align:center; padding-bottom: 8px;">
+                <div class="avatar" style="width:48px; height:48px; font-size:18px; margin:0 auto 8px;">
+                  {{ supplier.name|first|upper }}
+                </div>
+                <div style="font-weight:600; font-size:15px;">{{ supplier.name }}</div>
+                <div class="info-secondary" style="font-size:12px;">ID #{{ supplier.pk }}</div>
+              </div>
+
+              <div class="divider"></div>
+
+              <!-- Contact -->
+              <div class="jc-info-item">
+                <div class="jc-info-label">Phone</div>
+                <div class="jc-info-val td-mono">{{ supplier.phone|phone_number|default:"-" }}</div>
+              </div>
+
+              {% if supplier.contact_person %}
+              <div class="jc-info-item">
+                <div class="jc-info-label">Contact Person</div>
+                <div class="jc-info-val">{{ supplier.contact_person }}</div>
+              </div>
+              {% endif %}
+
+              {% if supplier.email %}
+              <div class="jc-info-item">
+                <div class="jc-info-label">Email</div>
+                <div class="jc-info-val" style="font-size:12.5px; word-break:break-all;">{{ supplier.email }}</div>
+              </div>
+              {% endif %}
+
+              {% if supplier.address %}
+              <div class="jc-info-item">
+                <div class="jc-info-label">Address</div>
+                <div class="jc-info-val" style="font-size:12.5px;">{{ supplier.address }}</div>
+              </div>
+              {% endif %}
+
+              <div class="divider"></div>
+
+              <!-- Financial Summary -->
+              <div class="jc-info-item">
+                <div class="jc-info-label">Total Invoiced</div>
+                <div class="jc-info-val td-mono">{{ total_invoiced|currency }}</div>
+              </div>
+              <div class="jc-info-item">
+                <div class="jc-info-label">Total Paid</div>
+                <div class="jc-info-val td-mono" style="color: var(--green);">{{ total_paid|currency }}</div>
+              </div>
+              <div class="jc-info-item">
+                <div class="jc-info-label">Balance Due</div>
+                <div class="jc-info-val td-mono" style="color: var(--red); font-weight:600;">{{ balance_due|currency }}</div>
+              </div>
+
+              <div class="divider"></div>
+
+              <!-- Dates -->
+              <div class="jc-info-item">
+                <div class="jc-info-label">Created</div>
+                <div class="jc-info-val">{{ supplier.created_at|date:"M d, Y" }}</div>
+              </div>
+              <div class="jc-info-item">
+                <div class="jc-info-label">Last Updated</div>
+                <div class="jc-info-val">{{ supplier.updated_at|date:"M d, Y" }}</div>
+              </div>
+
+              <!-- Actions -->
+              <div class="divider"></div>
+              <div style="display:flex; gap:8px;">
+                {% if perms.supplier.change_supplier %}
+                <a href="{% url 'supplier:edit' supplier.pk %}" class="btn btn-secondary btn-sm" style="flex:1; text-align:center;">
+                  <i data-icon="edit"></i> Edit
+                </a>
+                {% endif %}
+                {% if perms.supplier.delete_supplier %}
+                <a href="{% url 'supplier:delete' supplier.pk %}" class="btn btn-danger btn-sm" style="flex:1; text-align:center;">
+                  <i data-icon="trash"></i> Delete
+                </a>
+                {% endif %}
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

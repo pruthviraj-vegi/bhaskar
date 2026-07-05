@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ title }}</h1>
+  </div>
+  <div class="breadcrumb">
+    <a href="{% url 'inventory:assembly_list' %}">Assembly</a> <i data-icon="chevronRight"></i> <span>{{ title }}</span>
+  </div>
+</div>
+
+<div class="content">
+  <div class="page active">
+    <div class="form-container">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Confirm Deletion</div>
+            <div class="card-sub">This action cannot be undone.</div>
+          </div>
+        </div>
+        <div class="card-body">
+          <p style="margin-bottom: 24px;">
+            Are you sure you want to delete assembly product
+            <strong>{{ object.name }}</strong> ({{ object.code }})?
+          </p>
+          <form method="post">
+            {% csrf_token %}
+            <div class="form-actions">
+              <a href="{% url 'inventory:assembly_list' %}" class="btn btn-secondary">Cancel</a>
+              <button type="submit" class="btn btn-danger">Delete</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

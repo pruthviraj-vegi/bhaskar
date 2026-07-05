@@ -1,0 +1,257 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<!-- Page header -->
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ product.part_name }}</h1>
+    <p class="page-sub">{{ product.company_name }}{% if product.part_number %} · {{ product.part_number }}{% endif %}</p>
+  </div>
+  <div class="breadcrumb">
+    <a href="{% url 'inventory:list' %}">Inventory</a> <i data-icon="chevronRight"></i> <span>{{ product.part_name }}</span>
+  </div>
+</div>
+
+<!-- Content -->
+<div class="content">
+  <div class="page active">
+    <div class="pur-detail-layout">
+
+      <!-- ═══ MAIN: Stock & Logs ═══ -->
+      <div class="jc-detail-main">
+
+        <!-- ── Stock by Store ── -->
+        <div class="card" style="margin-bottom: 20px;">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Stock by Store</div>
+              <span class="info-secondary">{{ inventories|length }} inventory records</span>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              {% if perms.inventory.add_stockmovement %}
+              <a href="{% url 'inventory:receive_stock' product.pk %}" class="btn btn-primary btn-sm">
+                <i data-icon="plus"></i> Receive Stock
+              </a>
+              {% endif %}
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  
+                  <th style="text-align:right;">Quantity</th>
+                  <th style="text-align:right;">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for inv in inventories %}
+                <tr>
+                  
+                  <td class="td-mono" style="text-align:right;">
+                    {% if inv.quantity > 0 %}
+                      {{ inv.quantity }}
+                    {% else %}
+                      <span style="color:var(--red);">{{ inv.quantity }}</span>
+                    {% endif %}
+                  </td>
+                  <td style="text-align:right;">
+                    <div class="action-buttons" style="justify-content:flex-end;">
+                      {% if perms.inventory.change_inventory %}
+                      <a href="{% url 'inventory:adjust_stock' inv.pk %}" class="btn btn-secondary btn-sm" title="Adjust Stock">
+                        Adjust
+                      </a>
+                      {% endif %}
+                    </div>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="3" class="info-secondary text-center">No stock records found.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ── Inventory Logs ── -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Recent Activity</div>
+              <span class="info-secondary">{{ logs|length }} records</span>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Type</th>
+                  <th style="text-align:right;">Change</th>
+                  <th style="text-align:right;">After</th>
+                  <th>Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for log in logs %}
+                <tr>
+                  <td class="info-secondary">{{ log.created_at|date:"M d, Y H:i" }}</td>
+                  <td><span class="badge">{{ log.get_type_display }}</span></td>
+                  <td style="text-align:right;">
+                    {% if log.type == 'PRICE_CHANGE' %}
+                      {% if log.old_purchased_price and log.new_purchased_price %}
+                        <div style="font-size:12px;">Cost: <span style="color:var(--text3);">₹{{ log.old_purchased_price|currency }}</span> → <span style="color:var(--accent); font-weight:600;">₹{{ log.new_purchased_price|currency }}</span></div>
+                      {% endif %}
+                      {% if log.old_selling_price and log.new_selling_price %}
+                        <div style="font-size:12px;">Sell: <span style="color:var(--text3);">₹{{ log.old_selling_price|currency }}</span> → <span style="color:var(--accent); font-weight:600;">₹{{ log.new_selling_price|currency }}</span></div>
+                      {% endif %}
+                    {% else %}
+                      {% if log.quantity_change > 0 %}
+                        <span style="color: var(--green);">+{{ log.quantity_change }}</span>
+                      {% else %}
+                        <span style="color: var(--red);">{{ log.quantity_change }}</span>
+                      {% endif %}
+                    {% endif %}
+                  </td>
+                  <td class="td-mono" style="text-align:right;">
+                    {% if log.type == 'PRICE_CHANGE' %}
+                      —
+                    {% else %}
+                      {{ log.quantity_after }}
+                    {% endif %}
+                  </td>
+                  <td class="info-secondary">{{ log.notes|default:"-"|truncatewords:8 }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="5" class="info-secondary text-center">No activity logs found.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ═══ SIDEBAR: Product Info ═══ -->
+      <div class="jc-detail-sidebar">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Product Info</div>
+          </div>
+          <div class="card-body">
+            <div class="jc-section" style="gap: 14px;">
+
+              <!-- Avatar & Name -->
+              <div style="text-align:center; padding-bottom: 8px;">
+                <div class="avatar" style="width:48px; height:48px; font-size:18px; margin:0 auto 8px;">
+                  {{ product.company_name|first|upper }}
+                </div>
+                <div style="font-weight:600; font-size:15px;">{{ product.part_name }}</div>
+                <div class="info-secondary" style="font-size:12px;">{{ product.company_name }}</div>
+              </div>
+
+              <div class="divider"></div>
+
+              <!-- Details -->
+              <div class="jc-info-item">
+                <div class="jc-info-label">Barcode</div>
+                <div class="jc-info-val td-mono">{{ product.barcode|default:"-" }}</div>
+              </div>
+
+              {% if product.part_number %}
+              <div class="jc-info-item">
+                <div class="jc-info-label">Part Number</div>
+                <div class="jc-info-val td-mono">{{ product.part_number }}</div>
+              </div>
+              {% endif %}
+
+              <div class="jc-info-item">
+                <div class="jc-info-label">UOM</div>
+                <div class="jc-info-val">{{ product.get_uom_display }}</div>
+              </div>
+
+              <div class="jc-info-item">
+                <div class="jc-info-label">Status</div>
+                <div class="jc-info-val">
+                  {% if product.is_active %}
+                    <span class="badge badge-active">Active</span>
+                  {% else %}
+                    <span class="badge badge-inactive">Inactive</span>
+                  {% endif %}
+                </div>
+              </div>
+
+              <div class="divider"></div>
+
+              <!-- Pricing -->
+              <div class="jc-info-item">
+                <div class="jc-info-label">Cost Price</div>
+                <div class="jc-info-val td-mono">{{ product.purchased_price|currency }}</div>
+              </div>
+              <div class="jc-info-item">
+                <div class="jc-info-label">Selling Price</div>
+                <div class="jc-info-val td-mono">{{ product.selling_price|currency }}</div>
+              </div>
+              {% if product.discount %}
+              <div class="jc-info-item">
+                <div class="jc-info-label">Discount</div>
+                <div class="jc-info-val td-mono">{{ product.discount }}%</div>
+              </div>
+              {% endif %}
+              <div class="jc-info-item">
+                <div class="jc-info-label">Total Stock</div>
+                <div class="jc-info-val td-mono" style="font-weight:600;">{{ total_stock }}</div>
+              </div>
+
+              <div class="divider"></div>
+
+              <!-- Dates -->
+              <div class="jc-info-item">
+                <div class="jc-info-label">Created</div>
+                <div class="jc-info-val">{{ product.created_at|date:"M d, Y" }}</div>
+              </div>
+              <div class="jc-info-item">
+                <div class="jc-info-label">Last Updated</div>
+                <div class="jc-info-val">{{ product.updated_at|date:"M d, Y" }}</div>
+              </div>
+
+              <!-- Actions -->
+              <div class="divider"></div>
+              <div style="display:flex; gap:8px;">
+                {% if perms.inventory.change_product %}
+                <a href="{% url 'inventory:edit' product.pk %}" class="btn btn-secondary btn-sm" style="flex:1; text-align:center;">
+                  <i data-icon="edit"></i> Edit
+                </a>
+                {% endif %}
+                {% if perms.inventory.delete_product %}
+                <a href="{% url 'inventory:delete' product.pk %}" class="btn btn-danger btn-sm" style="flex:1; text-align:center;">
+                  <i data-icon="trash"></i> Delete
+                </a>
+                {% endif %}
+              </div>
+
+              {% if product.notes %}
+              <div class="divider"></div>
+              <div class="jc-info-item">
+                <div class="jc-info-label">Notes</div>
+                <div class="jc-info-val" style="font-size:12.5px;">{{ product.notes }}</div>
+              </div>
+              {% endif %}
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+{% load static %}
+{% load custom_filters %}
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="A5 Quotation - My Billing" />
+    <title>{{ details.name }} - Quotation #{{ details.id }}</title>
+    <link rel="stylesheet" href="{% static 'styles/A5.css' %}" />
+    <link rel="shortcut icon"
+          type="image/ico"
+          href="{% static 'images/favicon.ico' %}" />
+  </head>
+  <body>
+    <div class="container">
+      <div class="top-section">
+        <div class="header-data">
+          <div class="shop-data">
+            <div class="shop-details">
+              <div class="shop-name">Agri Drones</div>
+              <p class="shop-address">Quotation</p>
+            </div>
+          </div>
+          <div class="logo-section">
+            <div class="logo">
+              <img src="{% static 'images/logo.svg' %}"
+                   alt="Logo"
+                   height="60"
+                   width="60" />
+            </div>
+          </div>
+          <div class="invoice-data">
+            <div class="invoice-content">
+              <p>
+                Quotation No : <span class="invoice-value">#{{ details.id }}</span>
+              </p>
+              <p>
+                Type : <span class="invoice-value">{{ details.type }}</span>
+              </p>
+              <p>
+                Status : <span class="invoice-value">{{ details.get_status_display }}</span>
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="customer-section">
+          <div class="customer-content">
+            <h1>{{ details.name }}</h1>
+            <p>{{ details.phone }}</p>
+            {% if details.address %}<p>{{ details.address }}</p>{% endif %}
+          </div>
+        </div>
+        <div class="content-table">
+          <div class="table-logo">
+            <img src="{% static 'images/logo.svg' %}"
+                 alt="Logo"
+                 height="200"
+                 width="200" />
+          </div>
+          <table class="items-table">
+            <thead>
+              <tr>
+                <th>S.No</th>
+                <th class="text-center">Description</th>
+                <th>Qty</th>
+                <th>Rate</th>
+                <th>Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in values %}
+                <tr>
+                  <td>{{ forloop.counter }}</td>
+                  <td>{{ item.name }}</td>
+                  <td>{{ item.quantity }}</td>
+                  <td>{{ item.price|currency }}</td>
+                  <td>{{ item.total_price|currency }}</td>
+                </tr>
+              {% endfor %}
+              <tr class="empty-space">
+                <td colspan="5"></td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="4" class="font-semibold text-right">Net Total</td>
+                <td class="text-right highlight font-bold">{{ total|currency }}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+      <div class="bottom-section">
+        <div class="calculation-content">
+          <div class="amount-content">
+            <div class="terms_title">* Rupee In Words *</div>
+            <div class="font-semibold">{{ total|currencyToWord }}</div>
+          </div>
+        </div>
+        <div class="total-amount-content">
+          <div>
+            <p>
+              <span class="text-gray-700">Total:</span>
+              <span class="font-semibold">{{ total|currency }}</span>
+            </p>
+          </div>
+          <hr>
+          <div>
+            <p class="highlight">
+              <span>Total:</span>
+              <span>{{ total|currency }}</span>
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="footer-content">
+        <div class="terms-qrcode-content">
+          <div class="terms-content full-width">
+              <div class="terms-conditions">
+                <h3 class="terms_title">Terms &amp; Conditions</h3>
+                <div class="terms_subject">
+                    <em>1. This quotation is valid for 15 days from the date of issue</em>
+                    <em>2. Prices are subject to change without prior notice</em>
+                    <em>3. E. &amp; O.E</em>
+                </div>
+              </div>
+          </div>
+        </div>
+        <div class="footer-note-content">
+            <div class="thank-you">
+              <h3>Thank You For Your Inquiry</h3>
+              <p>This is a Computer Generated Quotation, Signature not Required</p>
+            </div>
+        </div>
+      </div>
+    </div>
+    <script src="{% static 'js/print.js' %}"></script>
+  </body>
+</html>

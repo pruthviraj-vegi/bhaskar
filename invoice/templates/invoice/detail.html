@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}Invoice #{{ invoice.id }}{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Invoice #{{ invoice.id }}</h1>
+    <p class="page-sub">Created on {{ invoice.created_at|date:"d M Y, h:i A" }}</p>
+  </div>
+  <div class="breadcrumb">
+    <a href="{% url 'cart:list' %}">Carts</a> <i data-icon="chevronRight"></i>
+    <span>Invoice #{{ invoice.id }}</span>
+  </div>
+</div>
+
+<div class="content">
+  <div class="page active">
+    <div style="display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap;">
+
+      <!-- ── LEFT: Invoice Items ── -->
+      <div style="flex: 1; min-width: 0;">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Invoice Items</div>
+              <div class="card-sub">{{ items|length }} item{{ items|length|pluralize }}</div>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 5%;">#</th>
+                  <th style="width: 40%;">Product</th>
+                  <th style="text-align: center; width: 15%;">Qty</th>
+                  <th style="text-align: right; width: 20%;">Price</th>
+                  <th style="text-align: right; width: 20%;">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in items %}
+                <tr>
+                  <td style="color: var(--text3);">{{ forloop.counter }}</td>
+                  <td>
+                    <div style="font-weight: 500;">{{ item.product.part_name }}</div>
+                    <div style="font-size: 12px; color: var(--text3);">{{ item.product.company_name }}</div>
+                  </td>
+                  <td style="text-align: center;" class="td-mono">{{ item.quantity }}</td>
+                  <td style="text-align: right;" class="td-mono">{{ item.price|currency }}</td>
+                  <td style="text-align: right;" class="td-mono" style="font-weight: 500;">{{ item.total_amount|currency }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="5" style="text-align: center; padding: 40px; color: var(--text3);">No items found.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Totals Footer -->
+          <div style="padding: 16px; border-top: 2px solid var(--border);">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+              <span style="color: var(--text3); font-size: 14px;">Subtotal</span>
+              <span class="td-mono" style="font-weight: 500;">{{ subtotal|currency }}</span>
+            </div>
+            {% if invoice.discount_amount %}
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+              <span style="color: var(--text3); font-size: 14px;">Discount</span>
+              <span class="td-mono" style="color: var(--red);">- {{ invoice.discount_amount|currency }}</span>
+            </div>
+            {% endif %}
+            <div style="display: flex; justify-content: space-between; padding-top: 10px; border-top: 2px solid var(--border);">
+              <span style="font-weight: 600; font-size: 16px;">Net Total</span>
+              <span class="td-mono" style="font-weight: 700; font-size: 20px; color: var(--accent);">{{ invoice.total_amount|currency }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── RIGHT: Invoice Info ── -->
+      <div style="width: 380px; min-width: 300px;">
+
+        <!-- Customer Card -->
+        <div class="card" style="margin-bottom: 20px;">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Customer</div>
+            </div>
+          </div>
+          <div style="padding: 16px;">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+              <div style="width: 42px; height: 42px; border-radius: 50%; background: var(--accent-dim); color: var(--accent); display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 16px;">
+                {{ invoice.customer.name|slice:":2"|upper }}
+              </div>
+              <div>
+                <div style="font-weight: 600; font-size: 15px;">{{ invoice.customer.name }}</div>
+                <div style="color: var(--text3); font-size: 13px;">{{ invoice.customer.phone|phone_number }}</div>
+              </div>
+            </div>
+            {% if invoice.customer.address %}
+            <div style="font-size: 13px; color: var(--text3); padding-top: 8px; border-top: 1px solid var(--border);">
+              {{ invoice.customer.address }}
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Invoice Meta Card -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Invoice Info</div>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <a href="{% url 'report:create_invoice' invoice.pk %}" class="btn btn-secondary btn-sm" target="_blank">
+                <i data-icon="printer" style="margin-right: 4px;"></i> Print
+              </a>
+              <a href="{% url 'invoice:update' invoice.pk %}" class="btn btn-secondary btn-sm">
+                <i data-icon="pencil" style="margin-right: 4px;"></i> Edit
+              </a>
+            </div>
+          </div>
+          <div style="padding: 16px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+              <div>
+                <div style="font-size: 12px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Invoice Type</div>
+                <div>
+                  <span class="badge" style="background: {% if invoice.invoice_type == 'cash' %}var(--green-dim); color: var(--green){% else %}var(--orange-dim); color: var(--orange){% endif %};">
+                    {{ invoice.get_invoice_type_display }}
+                  </span>
+                </div>
+              </div>
+              <div>
+                <div style="font-size: 12px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Payment Mode</div>
+                <div>
+                  <span class="badge" style="background: var(--surface2); color: var(--text2);">
+                    {{ invoice.get_payment_mode_display }}
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <div style="font-size: 12px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Billed By</div>
+                <div style="font-weight: 500; font-size: 14px;">{{ invoice.sale_user.username }}</div>
+              </div>
+              {% if invoice.advance_amount %}
+              <div>
+                <div style="font-size: 12px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Advance Paid</div>
+                <div class="td-mono" style="font-weight: 600; color: var(--green);">₹ {{ invoice.advance_amount|currency }}</div>
+              </div>
+              {% endif %}
+              {% if invoice.discount_amount %}
+              <div>
+                <div style="font-size: 12px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Discount</div>
+                <div class="td-mono" style="font-weight: 600; color: var(--red);">₹ {{ invoice.discount_amount|currency }}</div>
+              </div>
+              {% endif %}
+            </div>
+
+            {% if invoice.notes %}
+            <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border);">
+              <div style="font-size: 12px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Notes</div>
+              <div style="font-size: 14px; color: var(--text2);">{{ invoice.notes }}</div>
+            </div>
+            {% endif %}
+
+            <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border); font-size: 12px; color: var(--text3);">
+              Created {{ invoice.created_at|date:"d M Y, h:i A" }} · Updated {{ invoice.updated_at|date:"d M Y, h:i A" }}
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+</div>
+
+{% endblock %}

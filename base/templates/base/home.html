@@ -1,0 +1,325 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Dashboard Overview{% endblock %}
+
+{% block content %}
+<!-- Page header -->
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Executive Dashboard</h1>
+    <p class="page-sub" id="dashboard-subtitle">Overview of business performance — This Month</p>
+  </div>
+  <div class="page-header-controls">
+    <div class="breadcrumb breadcrumb--flush">
+      TracLogix <i data-icon="chevronRight"></i> <span>Dashboard</span>
+    </div>
+    <select id="dashboard-date-filter" class="filter-select filter-select--dash">
+      <option value="this_month" selected>This Month</option>
+      <option value="last_month">Last Month</option>
+      <option value="today">Today</option>
+      <option value="yesterday">Yesterday</option>
+      <option value="this_year">This Year</option>
+      <option value="all">All Time</option>
+    </select>
+  </div>
+</div>
+
+<!-- Content -->
+<div class="content" id="dashboard-content">
+  <div class="page active" id="page-main-dashboard">
+
+    <!-- ── KPI CARDS ── -->
+    <div class="kpi-grid">
+      <div class="kpi-card green">
+        <div class="kpi-content">
+          <div class="kpi-label">Total Inflow (Received)</div>
+          <div class="kpi-value" id="kpi-inflow"><span class="skeleton-text">--</span></div>
+        </div>
+        <div class="kpi-right">
+          <div class="kpi-icon"><i data-icon="revenue"></i></div>
+        </div>
+      </div>
+
+      <div class="kpi-card red">
+        <div class="kpi-content">
+          <div class="kpi-label">Total Outflow (Paid)</div>
+          <div class="kpi-value" id="kpi-outflow"><span class="skeleton-text">--</span></div>
+        </div>
+        <div class="kpi-right">
+          <div class="kpi-icon"><i data-icon="purchases"></i></div>
+        </div>
+      </div>
+
+      <div class="kpi-card blue">
+        <div class="kpi-content">
+          <div class="kpi-label">Net Balance</div>
+          <div class="kpi-value" id="kpi-net"><span class="skeleton-text">--</span></div>
+        </div>
+        <div class="kpi-right">
+          <div class="kpi-icon"><i data-icon="dashboard"></i></div>
+        </div>
+      </div>
+
+      <div class="kpi-card amber">
+        <div class="kpi-content">
+          <div class="kpi-label">Stock Value (Estimated)</div>
+          <div class="kpi-value" id="kpi-stock-value"><span class="skeleton-text">--</span></div>
+        </div>
+        <div class="kpi-right">
+          <div class="kpi-icon"><i data-icon="vehicles"></i></div>
+        </div>
+      </div>
+
+      <div class="kpi-card orange">
+        <div class="kpi-content">
+          <div class="kpi-label">Vehicles in Stock</div>
+          <div class="kpi-value" id="kpi-stock-count"><span class="skeleton-text">--</span></div>
+        </div>
+        <div class="kpi-right">
+          <div class="kpi-icon"><i data-icon="dashboard"></i></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── CHARTS ── -->
+    <div class="chart-grid chart-grid--single">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Cashflow Overview</div>
+            <div class="card-sub">Monthly comparison of outflow vs inflow (agreed amounts)</div>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="chart-wrap chart-wrap--tall"><canvas id="cashflowChart"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── RECENT ACTIVITY ── -->
+    <div class="card card--mt">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Recent Activity</div>
+          <div class="card-sub">Latest interactions across sales and purchases</div>
+        </div>
+      </div>
+      <div class="card-body card-body--flush">
+        <div class="table-wrap">
+          <table id="recent-activity-table">
+            <thead>
+              <tr>
+                <th>Type</th>
+                <th>Vehicle Reg.</th>
+                <th>Party</th>
+                <th>Amount</th>
+                <th>Date</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="recent-activity-body">
+              <tr>
+                <td colspan="6" class="text-center loading-cell">
+                  <div class="loading">Loading…</div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% comment %} <script>
+document.addEventListener('DOMContentLoaded', function() {
+
+  const cs = getComputedStyle(document.documentElement);
+  const getVar = v => cs.getPropertyValue(v).trim();
+  const gridColor = getVar('--border') || '#eeeeee';
+  const textColor = getVar('--text3') || '#aaaaaa';
+
+  Chart.defaults.font = { family: "'Instrument Sans', sans-serif" };
+  Chart.defaults.color = textColor;
+
+  let cashflowChart = null;
+
+  function formatCurrency(val) {
+    if (val == null) return '0';
+    return '' + Number(val).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  }
+
+  function populateKPIs(kpis) {
+    const map = {
+      'kpi-inflow': kpis.total_inflow,
+      'kpi-outflow': kpis.total_outflow,
+      'kpi-net': kpis.net_balance,
+      'kpi-stock-value': kpis.inventory_value,
+      'kpi-stock-count': kpis.inventory_count,
+    };
+    for (const [id, val] of Object.entries(map)) {
+      const el = document.getElementById(id);
+      if (el) {
+        el.innerHTML = typeof val === 'number' && val > 999 ? formatCurrency(val) : val;
+        el.classList.add('dash-fade-in');
+        
+        if (id === 'kpi-net') {
+           el.style.color = kpis.net_balance >= 0 ? 'var(--green)' : 'var(--red)';
+        }
+      }
+    }
+  }
+
+  function buildCashflowChart(data) {
+    const ctx = document.getElementById('cashflowChart');
+    if (!ctx || !data) return;
+
+    if (cashflowChart) cashflowChart.destroy();
+
+    cashflowChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: data.labels,
+        datasets: [{
+          label: 'Outflow (Purchases)',
+          data: data.outflow,
+          backgroundColor: getVar('--amber') + '88',
+          borderColor: getVar('--amber'),
+          borderWidth: 1.5,
+          borderRadius: 4,
+          borderSkipped: false,
+        }, {
+          label: 'Inflow (Sales)',
+          data: data.inflow,
+          backgroundColor: getVar('--green') + '88',
+          borderColor: getVar('--green'),
+          borderWidth: 1.5,
+          borderRadius: 4,
+          borderSkipped: false,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top',
+            labels: { usePointStyle: true, pointStyle: 'rectRounded', padding: 16, font: { size: 11.5 } }
+          },
+          tooltip: {
+            backgroundColor: getVar('--surface') || '#2d2d2d',
+            titleColor: getVar('--text') || '#fff',
+            bodyColor: getVar('--text2') || '#ccc',
+            borderColor: gridColor,
+            borderWidth: 1, padding: 10, cornerRadius: 6,
+            callbacks: { label: ctx => '' + Number(ctx.parsed.y).toLocaleString('en-IN') }
+          }
+        },
+        scales: {
+          x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+          y: {
+            grid: { color: gridColor, drawBorder: false },
+            ticks: { font: { size: 11 }, callback: v => v >= 100000 ? '' + (v / 100000).toFixed(1) + 'L' : '' + (v / 1000) + 'K' }
+          }
+        }
+      }
+    });
+  }
+
+  function populateRecentActivity(activities) {
+    const tbody = document.getElementById('recent-activity-body');
+    if (!tbody || !activities) return;
+
+    if (activities.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted" style="padding:24px">No activity found.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = activities.map(a => {
+      let typeBadge = a.type === 'Sale' 
+        ? '<span class="badge badge-done" style="background:var(--blue-dim);color:var(--blue)">Sale</span>' 
+        : '<span class="badge badge-progress" style="background:var(--amber-dim);color:var(--amber)">Purchase</span>';
+      
+      let statusBadge = '';
+      if (a.status === 'Paid' || a.status === 'Received') {
+         statusBadge = '<span class="badge badge-done">' + a.status + '</span>';
+      } else {
+         statusBadge = '<span class="badge badge-progress">Partial</span>';
+      }
+
+      return `
+        <tr class="dash-fade-in">
+          <td>${typeBadge}</td>
+          <td><span class="recent-plate" style="font-weight:600;font-size:13px">${a.vehicle}</span></td>
+          <td>${a.party}</td>
+          <td class="td-mono">${formatCurrency(a.amount)}</td>
+          <td class="text-muted">${a.date_str}</td>
+          <td>${statusBadge}</td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  // ════════════════════════════════════════════
+  //  FETCH DASHBOARD DATA
+  // ════════════════════════════════════════════
+  async function loadDashboard(dateFilter = 'all') {
+    try {
+      const url = `{% url 'base:dashboard_data' %}?date_filter=${dateFilter}`;
+      const res = await fetch(url, {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+
+      populateKPIs(data.kpis);
+      buildCashflowChart(data.cashflow_chart);
+      populateRecentActivity(data.recent_activity);
+
+      if (typeof renderIcons === 'function') renderIcons();
+
+    } catch (err) {
+      console.error('Dashboard load error:', err);
+      const kpiEl = document.getElementById('kpi-inflow');
+      if (kpiEl) {
+        kpiEl.innerHTML = '<span style="color:var(--red);font-size:14px">Failed to load</span>';
+      }
+    }
+  }
+
+  // ── Date Filter Binding ──
+  const filterSelect = document.getElementById('dashboard-date-filter');
+  const subtitleEl = document.getElementById('dashboard-subtitle');
+  
+  if (filterSelect) {
+    filterSelect.addEventListener('change', (e) => {
+      if (subtitleEl) {
+        const selectedText = e.target.options[e.target.selectedIndex].text;
+        subtitleEl.innerHTML = `Overview of business performance — ${selectedText}`;
+      }
+      
+      const kpis = ['inflow', 'outflow', 'net', 'stock-value', 'stock-count'];
+      kpis.forEach(id => {
+        const el = document.getElementById('kpi-' + id);
+        if (el) {
+          el.style.color = ''; // reset net color
+          el.classList.remove('dash-fade-in');
+          el.innerHTML = '<span class="skeleton-text">--</span>';
+        }
+      });
+      loadDashboard(e.target.value);
+    });
+  }
+
+  loadDashboard(filterSelect ? filterSelect.value : 'all');
+});
+</script> {% endcomment %}
+{% endblock %}

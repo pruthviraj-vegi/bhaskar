@@ -1,0 +1,252 @@
+{% extends "base.html" %}
+{% load custom_filters %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ session.name }}</h1>
+    <p class="page-sub">{{ session.phone }}</p>
+  </div>
+  <div class="breadcrumb">
+    Dashboard <i data-icon="chevronRight"></i> <span>{{ session.name }}</span>
+  </div>
+</div>
+
+<div class="content">
+  <div class="page active">
+    <div style="display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap;">
+
+      <!-- LEFT: Items Table -->
+      <div style="flex: 1; min-width: 0;">
+        <div class="card" style="min-height: 400px; display: flex; flex-direction: column;">
+          <div class="card-header" style="border-bottom: none; align-items: center;">
+            <div>
+              <div class="card-title" style="margin-bottom: 4px; color: var(--text3); font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Total Amount</div>
+              <div class="td-mono" id="q-subtotal" style="font-size: 28px; font-weight: 700; color: var(--accent);">{{ total|currency }}</div>
+            </div>
+          </div>
+
+          <div class="table-wrap" style="flex: 1;">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 5%;">#</th>
+                  <th style="width: 35%;">Item</th>
+                  <th style="text-align: center; width: 20%;">Price</th>
+                  <th style="text-align: center; width: 15%;">Qty</th>
+                  <th style="text-align: right; width: 20%;">Total</th>
+                  <th style="width: 50px;"></th>
+                </tr>
+              </thead>
+              <tbody id="q-tbody">
+                {% include "quotation/items_tbody.html" %}
+              </tbody>
+              <tfoot>
+                <tr style="background: var(--surface2);">
+                  <td></td>
+                  <td>
+                    <input type="text" id="new-name" class="form-input" placeholder="Item name" style="padding: 8px 12px; font-size: 14px;" autofocus>
+                  </td>
+                  <td style="text-align: center;">
+                    <input type="number" id="new-price" class="form-input td-mono" placeholder="0.00" step="0.01" min="0" style="width: 120px; padding: 8px 12px; text-align: center; font-size: 14px;">
+                  </td>
+                  <td style="text-align: center;">
+                    <input type="number" id="new-qty" class="form-input td-mono" placeholder="1" step="0.01" min="0" style="width: 80px; padding: 8px 12px; text-align: center; font-size: 14px;">
+                  </td>
+                  <td></td>
+                  <td style="text-align: center;">
+                    <button class="btn btn-primary btn-sm" onclick="addItem()" style="padding: 8px 12px;">
+                      <i data-icon="plus"></i>
+                    </button>
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Quotation Info -->
+      <div style="width: 380px; min-width: 300px;">
+
+        <div class="card" style="margin-bottom: 20px;">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Customer</div>
+            </div>
+          </div>
+          <div style="padding: 16px;">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+              <div style="width: 42px; height: 42px; border-radius: 50%; background: var(--accent-dim); color: var(--accent); display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 16px;">
+                {{ session.name|slice:":2"|upper }}
+              </div>
+              <div>
+                <div style="font-weight: 600; font-size: 15px;">{{ session.name }}</div>
+                <div style="color: var(--text3); font-size: 13px;">{{ session.phone }}</div>
+              </div>
+            </div>
+            {% if session.address %}
+            <div style="font-size: 13px; color: var(--text3); padding-top: 8px; border-top: 1px solid var(--border);">
+              {{ session.address }}
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Quotation Info</div>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <a href="{% url 'report:create_quotation' session.pk %}" class="btn btn-secondary btn-sm" target="_blank">
+                <i data-icon="printer" style="margin-right: 4px;"></i> Print
+              </a>
+            </div>
+          </div>
+          <div style="padding: 16px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+              <div>
+                <div style="font-size: 12px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Type</div>
+                <div style="font-weight: 500; font-size: 14px;">{{ session.type }}</div>
+              </div>
+              <div>
+                <div style="font-size: 12px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Status</div>
+                <div style="font-weight: 500; font-size: 14px;">{{ session.get_status_display }}</div>
+              </div>
+              <div>
+                <div style="font-size: 12px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Items</div>
+                <div style="font-weight: 500; font-size: 14px;">{{ items|length }}</div>
+              </div>
+            </div>
+
+            <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border);">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                <span style="color: var(--text3); font-size: 14px;">Total</span>
+                <span class="td-mono" id="q-sidebar-total" style="font-weight: 700; font-size: 20px; color: var(--accent);">{{ total|currency }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function getCookie(name) {
+    let v = null;
+    if (document.cookie && document.cookie !== '') {
+        document.cookie.split(';').forEach(c => {
+            c = c.trim();
+            if (c.startsWith(name + '=')) v = decodeURIComponent(c.substring(name.length + 1));
+        });
+    }
+    return v;
+}
+const csrftoken = getCookie('csrftoken');
+const tbody = document.getElementById('q-tbody');
+
+function refreshDOM(res) {
+    tbody.innerHTML = res.html;
+    const fmt = Number(res.total_amount).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    document.getElementById('q-subtotal').innerHTML = fmt;
+    document.getElementById('q-sidebar-total').innerHTML = fmt;
+    if (typeof renderIcons === 'function') renderIcons();
+}
+
+function addItem() {
+    const nameEl = document.getElementById('new-name');
+    const priceEl = document.getElementById('new-price');
+    const qtyEl = document.getElementById('new-qty');
+    const name = nameEl.value.trim();
+    if (!name) { nameEl.focus(); return; }
+
+    fetch('{% url "quotation:api_add_item" session.pk %}', {
+        method: 'POST',
+        headers: {'X-CSRFToken': csrftoken, 'Content-Type': 'application/json'},
+        body: JSON.stringify({name: name, price: priceEl.value || 0, quantity: qtyEl.value || 1})
+    })
+    .then(r => r.json())
+    .then(res => {
+        if (res.success) {
+            refreshDOM(res);
+            nameEl.value = '';
+            priceEl.value = '';
+            qtyEl.value = '';
+            nameEl.focus();
+        } else {
+            alert(res.error);
+        }
+    });
+}
+
+function updateItem(itemId, data) {
+    fetch(`/quotation/api/item/${itemId}/update/`, {
+        method: 'POST',
+        headers: {'X-CSRFToken': csrftoken, 'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+    })
+    .then(r => r.json())
+    .then(res => { if (res.success) refreshDOM(res); });
+}
+
+function removeItem(itemId) {
+    fetch(`/quotation/api/item/${itemId}/remove/`, {
+        method: 'POST',
+        headers: {'X-CSRFToken': csrftoken, 'Content-Type': 'application/json'},
+        body: JSON.stringify({})
+    })
+    .then(r => r.json())
+    .then(res => { if (res.success) refreshDOM(res); });
+}
+
+// Event delegation on tbody — survives DOM replacement
+tbody.addEventListener('blur', function(e) {
+    const el = e.target;
+    if (el.classList.contains('item-name')) {
+        updateItem(el.dataset.id, {name: el.innerText.trim()});
+    } else if (el.classList.contains('item-price')) {
+        updateItem(el.dataset.id, {price: el.innerText.trim()});
+    } else if (el.classList.contains('item-qty')) {
+        updateItem(el.dataset.id, {quantity: el.value});
+    }
+}, true);
+
+tbody.addEventListener('keydown', function(e) {
+    const el = e.target;
+    if (e.key === 'Enter') {
+        if (el.classList.contains('item-name') || el.classList.contains('item-price')) {
+            e.preventDefault();
+            el.blur();
+        } else if (el.classList.contains('item-qty')) {
+            e.preventDefault();
+            el.blur();
+        }
+    }
+});
+
+// Footer input row — Enter flows through fields then adds
+document.getElementById('new-name').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { e.preventDefault(); document.getElementById('new-price').focus(); }
+});
+document.getElementById('new-price').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { e.preventDefault(); document.getElementById('new-qty').focus(); }
+});
+document.getElementById('new-qty').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { e.preventDefault(); addItem(); }
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('new-name').focus();
+});
+</script>
+{% endblock extra_js %}

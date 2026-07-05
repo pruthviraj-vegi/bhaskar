@@ -1,0 +1,760 @@
+/* ========================================
+   A5 INVOICE TEMPLATE
+   Uses CSS tokens from main.css
+   ======================================== */
+
+:root {
+  /* Local tokens mirroring main.css for print context */
+  --text: #1a1916;
+  --text2: #5a5850;
+  --text3: #9c9a90;
+  --accent: #c2410c;
+  --accent-lt: #fff7ed;
+  --blue: #1d4ed8;
+  --blue-lt: #eff6ff;
+  --green: #15803d;
+  --green-lt: #f0fdf4;
+  --amber: #b45309;
+  --amber-lt: #fffbeb;
+  --red: #dc2626;
+  --red-lt: #fef2f2;
+  --surface: #ffffff;
+  --surface2: #f0efe9;
+  --border: #e2e0d6;
+  --border2: #ccc9bc;
+}
+
+@page {
+    size: A5;
+    margin: 5mm;
+}
+
+@media print {
+    @page {
+        size: A5;
+        margin: 5mm;
+        padding: 2mm;
+    }
+
+    body {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        margin: 0;
+        padding: 0;
+    }
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: "Instrument Sans", -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 10px;
+    line-height: 1.4;
+    color: var(--text);
+    background: #cfcfcf;
+    margin: 0;
+    padding: 0;
+}
+
+/* ========================================
+   CONTAINER & LAYOUT
+   ======================================== */
+.container {
+    max-width: 100%;
+    margin: 5mm auto;
+    background: var(--surface);
+    width: 148mm;
+    min-height: 210mm;
+    padding: 10px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+/* ========================================
+   HEADER SECTION
+   ======================================== */
+.top-section {
+    flex: 1;
+    /* Allow top section to grow and push bottom section down */
+}
+
+.header-data {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    padding: 8px 0;
+    border-bottom: 2px solid var(--border);
+}
+
+.shop-data {
+    flex: 1;
+    text-align: left;
+}
+
+.logo-section {
+    flex: 0 0 auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.logo {
+    width: 50px;
+    height: 50px;
+}
+
+.logo img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.shop-details {
+    width: 100%;
+}
+
+.shop-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 2px;
+    line-height: 1.2;
+}
+
+.shop-address {
+    font-size: 9px;
+    color: var(--text2);
+    margin: 1px 0;
+    line-height: 1.3;
+}
+
+.text-bold {
+    font-weight: 600;
+    color: var(--text);
+    font-size: 9px;
+    margin: 1px 0;
+}
+
+/* ========================================
+   INVOICE DATA SECTION
+   ======================================== */
+.invoice-data {
+    flex: 1;
+    text-align: right;
+}
+
+.invoice-content {
+    background: var(--surface2);
+    padding: 6px 8px;
+    border-radius: var(--r-sm);
+    border: 1px solid var(--border);
+    display: inline-block;
+}
+
+.invoice-content p {
+    font-size: 9px;
+    margin: 2px 0;
+    color: var(--text2);
+}
+
+.invoice-value {
+    font-weight: 600;
+    color: var(--text);
+}
+
+/* Customer Section */
+.customer-section {
+    margin-bottom: 8px;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.customer-content {
+    text-align: center;
+}
+
+.customer-content h1 {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 2px;
+    line-height: 1.2;
+}
+
+.customer-content p {
+    font-size: 9px;
+    color: var(--text2);
+    line-height: 1.3;
+}
+
+/* ========================================
+   CONTENT TABLE SECTION
+   ======================================== */
+.content-table {
+    position: relative;
+    margin-top: 8px;
+    min-height: 100mm;
+    /* Reduced minimum height */
+    /* Removed fixed height to allow dynamic sizing */
+}
+
+.table-logo {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    text-align: center;
+    z-index: 999;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.table-logo img {
+    width: 80%;
+    height: 80%;
+    opacity: 0.3;
+    object-fit: contain;
+}
+
+.items-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    overflow: hidden;
+    position: relative;
+    z-index: 2;
+    table-layout: fixed;
+    min-height: 110mm;
+}
+
+/* Define column widths for better space distribution */
+.items-table th:nth-child(1),
+.items-table td:nth-child(1) {
+    width: 8%;
+}
+
+/* S.No */
+.items-table th:nth-child(2),
+.items-table td:nth-child(2) {
+    width: 35%;
+}
+
+/* Description */
+.items-table th:nth-child(3),
+.items-table td:nth-child(3) {
+    width: 12%;
+}
+
+/* HSN/SAC */
+.items-table th:nth-child(4),
+.items-table td:nth-child(4) {
+    width: 10%;
+}
+
+/* Qty */
+.items-table th:nth-child(5),
+.items-table td:nth-child(5) {
+    width: 8%;
+}
+
+/* UOM */
+.items-table th:nth-child(6),
+.items-table td:nth-child(6) {
+    width: 12%;
+}
+
+/* Rate */
+.items-table th:nth-child(7),
+.items-table td:nth-child(7) {
+    width: 15%;
+}
+
+/* Amount */
+
+.items-table thead {
+    background: linear-gradient(135deg, var(--accent) 0%, #b23409 100%);
+    color: var(--surface);
+}
+
+.items-table th {
+    padding: 6px 4px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    /* Removed vertical lines */
+}
+
+.items-table td {
+    padding: 4px;
+    border-bottom: 1px solid var(--surface2);
+    vertical-align: top;
+    min-height: 18px;
+    color: var(--text);
+}
+
+/* Description column specific styling */
+.items-table td:nth-child(2) {
+    text-align: left;
+    word-wrap: break-word;
+    white-space: normal;
+    line-height: 1.2;
+}
+
+.items-table tbody tr:hover {
+    background: var(--surface2);
+}
+
+.items-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.empty-space {
+    height: 100%;
+    /* Changed from fixed height to auto */
+}
+
+.empty-space td {
+    height: 20px;
+    border-bottom: 1px solid var(--surface2) !important;
+    background: var(--surface);
+    border-top: 1px solid var(--border2);
+    border-left: none;
+    border-right: none;
+    vertical-align: top;
+}
+
+
+.items-table tbody tr td {
+    height: 25px;
+    vertical-align: middle;
+}
+
+/* ========================================
+   TABLE FOOTER
+   ======================================== */
+.items-table tfoot {
+    background: var(--surface2);
+    border-top: 2px solid var(--border);
+}
+
+.items-table tfoot td {
+    padding: 6px 4px;
+    font-weight: 600;
+    border-top: 2px solid var(--border);
+    border-bottom: none;
+    height: 18px;
+    vertical-align: middle;
+    color: var(--text);
+}
+
+.highlight {
+    color: var(--text);
+    font-weight: 700;
+    border-radius: 3px;
+    padding: 2px 4px;
+}
+
+/* ========================================
+   BOTTOM SECTION
+   ======================================== */
+.bottom-section {
+    /* margin-top: 12px; */
+    display: flex;
+    gap: 2px;
+    /* align-items: flex-start; */
+    flex-shrink: 0;
+    /* Prevent bottom section from shrinking */
+}
+
+.calculation-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+/* ========================================
+   TAX TABLE
+   ======================================== */
+.tax-content {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    overflow: hidden;
+}
+
+.tax-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9px;
+}
+
+.tax-table thead {
+    background: var(--accent);
+}
+
+.tax-table th {
+    padding: 4px 6px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 8px;
+    color: var(--surface);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.tax-table td {
+    text-align: center;
+    padding: 4px 6px;
+    border-bottom: 1px solid var(--surface2);
+    color: var(--text);
+}
+
+.tax-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* ========================================
+   AMOUNT IN WORDS
+   ======================================== */
+.amount-content {
+    background: var(--surface2);
+    padding: 6px 8px;
+    border-radius: var(--r-sm);
+    border: 1px solid var(--border);
+}
+
+.terms_title {
+    font-size: 8px;
+    font-weight: 600;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 2px;
+}
+
+.amount-content div:last-child {
+    font-size: 9px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.3;
+}
+
+/* ========================================
+   TOTAL AMOUNT SECTION
+   ======================================== */
+.total-amount-content {
+    flex: 0 0 180px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 8px;
+}
+
+.total-amount-content>div {
+    margin-bottom: 4px;
+}
+
+.total-amount-content p {
+    font-size: 9px;
+    margin: 2px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.total-amount-content span {
+    font-weight: 600;
+    color: var(--text);
+}
+
+.total-amount-content .highlight {
+    color: var(--accent);
+    padding: 4px 6px;
+    border-radius: var(--r-sm);
+    font-weight: 900;
+    font-size: 14px;
+}
+
+/* ========================================
+   FOOTER SECTION
+   ======================================== */
+.footer-content {
+    display: flex;
+    gap: 2px;
+    flex-direction: column;
+}
+
+.terms-qrcode-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 2px;
+}
+
+.terms-content {
+    flex: 1;
+}
+
+.terms-content.full-width {
+    flex: 1;
+    width: 100%;
+}
+
+.terms-conditions {
+    background: var(--surface2);
+    padding: 6px 8px;
+    border-radius: var(--r-sm);
+    border: 1px solid var(--border);
+}
+
+.terms-conditions h3 {
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.terms_subject {
+    font-size: 8px;
+    color: var(--text2);
+    line-height: 1.4;
+}
+
+.terms_subject em {
+    display: block;
+    margin: 1px 0;
+    font-style: normal;
+}
+
+.qrcode-content {
+    flex: 0 0 60px;
+    text-align: center;
+}
+
+.barcode {
+    width: 60px;
+    height: 60px;
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--surface);
+    box-shadow: var(--sh);
+}
+
+.barcode img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    background: var(--surface);
+    padding: 2px;
+    border-radius: 2px;
+}
+
+.footer-note-content {
+    text-align: center;
+}
+
+.thank-you {
+    background: var(--surface2);
+    padding: 6px 8px;
+    border-radius: var(--r-sm);
+    border: 1px solid var(--border);
+}
+
+.thank-you h3 {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 2px;
+}
+
+.thank-you p {
+    font-size: 7px;
+    color: var(--text2);
+    font-style: italic;
+    margin: 0;
+}
+
+/* ========================================
+   RESPONSIVE ADJUSTMENTS
+   ======================================== */
+@media print {
+    .container {
+        max-width: none;
+        margin: 0;
+        padding: 0;
+        gap: 2px;
+    }
+
+}
+
+/* ========================================
+   UTILITY CLASSES
+   ======================================== */
+.text-center {
+    text-align: center;
+}
+
+.text-right {
+    text-align: right;
+}
+
+.text-left {
+    text-align: left;
+}
+
+.font-bold {
+    font-weight: 700;
+}
+
+.font-semibold {
+    font-weight: 600;
+}
+
+.font-medium {
+    font-weight: 500;
+}
+
+.text-xs {
+    font-size: 8px;
+}
+
+.text-sm {
+    font-size: 9px;
+}
+
+.text-base {
+    font-size: 10px;
+}
+
+.text-lg {
+    font-size: 12px;
+}
+
+.mb-1 {
+    margin-bottom: 2px;
+}
+
+.mb-2 {
+    margin-bottom: 4px;
+}
+
+.mb-3 {
+    margin-bottom: 6px;
+}
+
+.mb-4 {
+    margin-bottom: 8px;
+}
+
+.mt-1 {
+    margin-top: 2px;
+}
+
+.mt-2 {
+    margin-top: 4px;
+}
+
+.mt-3 {
+    margin-top: 6px;
+}
+
+.mt-4 {
+    margin-top: 8px;
+}
+
+.p-1 {
+    padding: 2px;
+}
+
+.p-2 {
+    padding: 4px;
+}
+
+.p-3 {
+    padding: 6px;
+}
+
+.p-4 {
+    padding: 8px;
+}
+
+.border {
+    border: 1px solid var(--border);
+}
+
+.border-t {
+    border-top: 1px solid var(--border);
+}
+
+.border-b {
+    border-bottom: 1px solid var(--border);
+}
+
+.border-l {
+    border-left: 1px solid var(--border);
+}
+
+.border-r {
+    border-right: 1px solid var(--border);
+}
+
+.rounded {
+    border-radius: var(--r);
+}
+
+.rounded-sm {
+    border-radius: var(--r-sm);
+}
+
+.rounded-md {
+    border-radius: var(--r);
+}
+
+.bg-gray-50 {
+    background-color: var(--surface2);
+}
+
+.bg-blue-50 {
+    background-color: var(--blue-lt);
+}
+
+.bg-white {
+    background-color: var(--surface);
+}
+
+.text-gray-600 {
+    color: var(--text2);
+}
+
+.text-gray-700 {
+    color: var(--text2);
+}
+
+.text-gray-900 {
+    color: var(--text);
+}
+
+.text-blue-600 {
+    color: var(--blue);
+}

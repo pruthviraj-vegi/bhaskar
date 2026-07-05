@@ -1,0 +1,472 @@
+{% extends "base.html" %}
+{% load custom_filters %}
+
+{% block title %}{{ assembly.name }}{% endblock %}
+
+{% block content %}
+<!-- Page header -->
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ assembly.name }}</h1>
+    <p class="page-sub">Assembly Product Details</p>
+  </div>
+  <div class="breadcrumb">
+    <a href="{% url 'inventory:assembly_list' %}">Assembly</a> <i data-icon="chevronRight"></i> <span>{{ assembly.name }}</span>
+  </div>
+</div>
+
+<!-- Content -->
+<div class="content">
+  <div class="page active">
+    <div class="pur-detail-layout">
+
+      <!-- ═══ MAIN: Items ═══ -->
+      <div class="jc-detail-main">
+
+        <!-- ── Assembly Items ── -->
+        <div class="card" style="min-height: 500px; display: flex; flex-direction: column;">
+          <div class="card-header" style="border-bottom: none; align-items: center;">
+            <div>
+              <div class="card-title" style="margin-bottom: 4px; color: var(--text3); font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Total Amount</div>
+              <div class="td-mono" id="item-total" style="font-size: 28px; font-weight: 700; color: var(--accent);">{{ total_amount|currency }}</div>
+            </div>
+            {% if perms.inventory.change_assemblyproduct %}
+            <div>
+              <button type="button" id="mode-toggle-btn" class="btn btn-secondary btn-sm" onclick="toggleMode()">
+                <i data-icon="edit"></i> <span id="mode-btn-text">Edit</span>
+              </button>
+            </div>
+            {% endif %}
+          </div>
+
+          <!-- Edit Mode: Search Bar (hidden in view mode) -->
+          <div id="edit-mode-controls" style="display: none; padding: 0 16px 16px 16px; border-bottom: 1px solid var(--border); position: relative;">
+            <div style="position: relative; display: flex; align-items: center; background: var(--surface); border: 2px solid var(--accent); border-radius: var(--r-sm); padding: 0 12px; box-shadow: 0 0 0 3px var(--accent-dim);">
+              <i data-icon="search" style="color: var(--text3); width: 20px; margin-right: 8px;"></i>
+              <input type="text" id="product-search" class="form-input" style="border: none; background: transparent; padding: 12px; flex:1; font-size: 16px; font-weight: 500;" placeholder="Search Product or Scan Barcode…" autocomplete="off">
+            </div>
+            <!-- Autocomplete Dropdown -->
+            <div id="search-results" style="display: none; position: absolute; top: calc(100% - 16px); left: 16px; right: 16px; z-index: 50; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-sm); box-shadow: var(--shadow-lg); max-height: 400px; overflow-y: auto;"></div>
+          </div>
+
+          <div class="table-wrap" style="flex: 1;">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 35%;">Product</th>
+                  <th style="width: 20%;">Barcode</th>
+                  <th style="text-align: right; width: 15%;">Price</th>
+                  <th style="text-align: center; width: 15%;" id="qty-col-header">Qty</th>
+                  <th style="text-align: right; width: 15%;">Total</th>
+                  <th style="width: 15%; text-align: right;" id="actions-col-header">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="items-tbody">
+                {% include "assembly/items_tbody.html" %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ═══ SIDEBAR: Assembly Info ═══ -->
+      <div class="jc-detail-sidebar">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Assembly Info</div>
+          </div>
+          <div class="card-body">
+            <div class="jc-section" style="gap: 14px;">
+
+              <!-- Avatar & Name -->
+              <div style="text-align:center; padding-bottom: 8px;">
+                <div class="avatar" style="width:48px; height:48px; font-size:18px; margin:0 auto 8px;">
+                  {{ assembly.name|first|upper }}
+                </div>
+                <div style="font-weight:600; font-size:15px;">{{ assembly.name }}</div>
+              </div>
+
+              <div class="divider"></div>
+
+              <!-- Details -->
+              <div class="jc-info-item">
+                <div class="jc-info-label">Barcode</div>
+                <div class="jc-info-val td-mono">{{ assembly.barcode|default:"-" }}</div>
+              </div>
+
+              <div class="divider"></div>
+
+              <!-- Dates -->
+              <div class="jc-info-item">
+                <div class="jc-info-label">Created</div>
+                <div class="jc-info-val">{{ assembly.created_at|date:"M d, Y" }}</div>
+              </div>
+              <div class="jc-info-item">
+                <div class="jc-info-label">Last Updated</div>
+                <div class="jc-info-val">{{ assembly.updated_at|date:"M d, Y" }}</div>
+              </div>
+
+              <div class="divider"></div>
+
+              <!-- Summary -->
+              <div class="jc-info-item">
+                <div class="jc-info-label">Total Qty</div>
+                <div class="jc-info-val td-mono" style="font-weight: 600; color: var(--accent);">{{ items_count }}</div>
+              </div>
+              <div class="jc-info-item">
+                <div class="jc-info-label">Total Amount</div>
+                <div class="jc-info-val td-mono" style="font-weight: 600; color: var(--accent);">{{ total_amount|currency }}</div>
+              </div>
+
+              <div class="jc-info-item" style="background: var(--surface2); padding: 12px; border-radius: var(--r-sm); flex-direction: column; text-align: center; margin-top: 12px;">
+                <div class="jc-info-label" style="margin-bottom: 4px; font-weight: 600; color: var(--text); width: 100%;">Possible Assemblies</div>
+                <div class="jc-info-val td-mono" style="font-weight: 700; color: {% if max_possible > 0 %}var(--green){% else %}var(--red){% endif %}; font-size: 24px; width: 100%; text-align: center;">
+                  {{ max_possible|default:"0" }}
+                </div>
+                <div style="font-size: 11px; color: var(--text3); margin-top: 6px; width: 100%; text-align: center;">
+                  From current inventory
+                </div>
+              </div>
+
+              <!-- Actions -->
+              <div class="divider"></div>
+              <div style="display:flex; gap:8px;">
+                {% if perms.inventory.change_assemblyproduct %}
+                <a href="{% url 'inventory:assembly_edit' assembly.pk %}" class="btn btn-secondary btn-sm" style="flex:1; text-align:center;">
+                  <i data-icon="edit"></i> Edit Info
+                </a>
+                {% endif %}
+                {% if perms.inventory.delete_assemblyproduct %}
+                <a href="{% url 'inventory:assembly_delete' assembly.pk %}" class="btn btn-danger btn-sm" style="flex:1; text-align:center;">
+                  <i data-icon="trash"></i> Delete
+                </a>
+                {% endif %}
+              </div>
+
+              {% if assembly.description %}
+              <div class="divider"></div>
+              <div class="jc-info-item">
+                <div class="jc-info-label">Notes</div>
+                <div class="jc-info-val" style="font-size:12.5px;">{{ assembly.description }}</div>
+              </div>
+              {% endif %}
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Setup CSRF
+  function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+          const cookies = document.cookie.split(';');
+          for (let i = 0; i < cookies.length; i++) {
+              const cookie = cookies[i].trim();
+              if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                  cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                  break;
+              }
+          }
+      }
+      return cookieValue;
+  }
+  const csrftoken = getCookie('csrftoken');
+
+  // Mode Toggle
+  let isEditMode = false;
+
+  function toggleMode() {
+    isEditMode = !isEditMode;
+    const editControls = document.getElementById('edit-mode-controls');
+    const modeBtn = document.getElementById('mode-toggle-btn');
+    const modeBtnText = document.getElementById('mode-btn-text');
+    const qtyColHeader = document.getElementById('qty-col-header');
+    const actionsColHeader = document.getElementById('actions-col-header');
+    const editableCells = document.querySelectorAll('.mode-switch');
+    const viewCells = document.querySelectorAll('.mode-view');
+
+    if (isEditMode) {
+      editControls.style.display = 'block';
+      modeBtn.classList.remove('btn-secondary');
+      modeBtn.classList.add('btn-primary');
+      modeBtnText.textContent = 'View';
+      qtyColHeader.innerHTML = 'Qty <i data-icon="edit" style="width:12px;"></i>';
+      actionsColHeader.innerHTML = 'Actions <i data-icon="edit" style="width:12px;"></i>';
+      editableCells.forEach(el => el.style.display = '');
+      viewCells.forEach(el => el.style.display = 'none');
+      document.getElementById('product-search').focus();
+    } else {
+      editControls.style.display = 'none';
+      modeBtn.classList.remove('btn-primary');
+      modeBtn.classList.add('btn-secondary');
+      modeBtnText.textContent = 'Edit';
+      qtyColHeader.innerHTML = 'Qty';
+      actionsColHeader.innerHTML = 'Actions';
+      editableCells.forEach(el => el.style.display = 'none');
+      viewCells.forEach(el => el.style.display = '');
+    }
+    renderIcons && renderIcons();
+  }
+
+  // Search & Autocomplete
+  const searchInput = document.getElementById('product-search');
+  const resultsBox = document.getElementById('search-results');
+  let debounceTimer = null;
+  let selectedIndex = -1;
+
+  if (searchInput) {
+    searchInput.addEventListener('input', function() {
+      clearTimeout(debounceTimer);
+      let q = this.value.trim();
+      selectedIndex = -1;
+
+      if (q.length < 2) {
+        resultsBox.style.display = 'none';
+        return;
+      }
+
+      resultsBox.style.display = 'block';
+      resultsBox.innerHTML = '<div style="padding: 16px; text-align: center; color: var(--text3);">Searching…</div>';
+
+      debounceTimer = setTimeout(function() {
+        fetch('{% url "inventory:assembly_product_search" %}?q=' + encodeURIComponent(q))
+          .then(r => r.json())
+          .then(data => {
+            if (!data.results || data.results.length === 0) {
+              resultsBox.innerHTML = '<div style="padding: 16px; text-align: center; color: var(--text3);">No products found.</div>';
+              return;
+            }
+
+            let html = '';
+            data.results.forEach(r => {
+              html += `
+                <div class="search-item" data-id="${r.id}" style="padding: 12px 16px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='var(--surface2)'" onmouseout="if(!this.classList.contains('active-search')) this.style.background='transparent'" onclick="addToAssembly(${r.id})">
+                  <div style="display: flex; justify-content: space-between; align-items:center; margin-bottom: 4px;">
+                    <strong style="color: var(--text); font-size: 14px;">${r.part_name}</strong>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; align-items:center; font-size: 12px; color: var(--text3);">
+                    <span>${r.barcode ? r.barcode : r.company_name}</span>
+                    <span class="badge" style="background: var(--surface2); color: var(--text2);">₹ ${r.selling_price}</span>
+                  </div>
+                </div>`;
+            });
+
+            resultsBox.innerHTML = html;
+          })
+          .catch(() => {
+            resultsBox.innerHTML = '<div style="padding:16px;text-align:center;color:var(--red);">Search failed.</div>';
+          });
+      }, 300);
+    });
+
+    searchInput.addEventListener('keydown', function(e) {
+      const items = resultsBox.querySelectorAll('.search-item');
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (items.length > 0) {
+          selectedIndex = (selectedIndex < items.length - 1) ? selectedIndex + 1 : 0;
+          updateSearchHighlight(items);
+        }
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (items.length > 0) {
+          selectedIndex = (selectedIndex > 0) ? selectedIndex - 1 : items.length - 1;
+          updateSearchHighlight(items);
+        }
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        
+        // If we have an item actively highlighted, add IT instead of submitting a raw barcode
+        if (selectedIndex > -1 && items.length > 0) {
+          const selectedId = items[selectedIndex].getAttribute('data-id');
+          if (selectedId) addToAssembly(selectedId);
+          return;
+        }
+        
+        // Otherwise, proceed as standard barcode scanner
+        let bc = this.value.trim();
+        if(!bc) return;
+        
+        // Hide dropdown if it's open, because they scanned
+        resultsBox.style.display = 'none';
+        
+        // Lock input briefly
+        this.disabled = true;
+        
+        fetch('{% url "inventory:assembly_add_by_barcode" assembly.pk %}', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrftoken, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ barcode: bc })
+        })
+        .then(r => r.json())
+        .then(res => {
+            this.disabled = false;
+            this.value = '';
+            this.focus();
+            if (res.success) {
+                refreshItemsDOM(res);
+            } else {
+                alert("Error: " + res.error);
+            }
+        })
+        .catch(() => {
+            this.disabled = false;
+            this.value = '';
+            this.focus();
+            alert("Network error.");
+        });
+      } else if (e.key === 'Escape') {
+        resultsBox.style.display = 'none';
+        selectedIndex = -1;
+      }
+    });
+  }
+
+  function updateSearchHighlight(items) {
+    items.forEach((item, index) => {
+      if (index === selectedIndex) {
+        item.style.background = 'var(--surface2)';
+        item.classList.add('active-search');
+      } else {
+        item.style.background = 'transparent';
+        item.classList.remove('active-search');
+      }
+    });
+  }
+
+  document.addEventListener('click', function(e) {
+    if (searchInput && resultsBox && !searchInput.contains(e.target) && !resultsBox.contains(e.target)) {
+      resultsBox.style.display = 'none';
+    }
+  });
+
+  // Refresh Items Table
+  function refreshItemsDOM(res) {
+    document.getElementById('items-tbody').innerHTML = res.html;
+    document.getElementById('item-total').innerHTML = res.total != null ? res.total : '{{ total_amount|currency }}';
+    document.querySelectorAll('.mode-switch').forEach(el => {
+      el.style.display = isEditMode ? '' : 'none';
+    });
+    document.querySelectorAll('.mode-view').forEach(el => {
+      el.style.display = isEditMode ? 'none' : '';
+    });
+    bindItemEvents();
+  }
+
+  // Add Item to Assembly
+  function addToAssembly(productId) {
+    if (resultsBox) resultsBox.style.display = 'none';
+    if (searchInput) {
+      searchInput.value = '';
+      searchInput.focus();
+      selectedIndex = -1;
+    }
+
+    fetch('{% url "inventory:assembly_add_item" assembly.pk %}', {
+      method: 'POST',
+      headers: { 'X-CSRFToken': csrftoken, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ product_id: productId, quantity: 1 })
+    })
+    .then(r => r.json())
+    .then(res => {
+      if (res.success) {
+        refreshItemsDOM(res);
+      } else {
+        alert("Error: " + res.error);
+      }
+    });
+  }
+
+  // Update Quantity
+  function setQty(itemId, newQty) {
+    if(newQty < 0) return;
+    fetch('/inventory/assembly/api/item/' + itemId + '/update/', {
+      method: 'POST',
+      headers: { 'X-CSRFToken': csrftoken, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ quantity: newQty })
+    })
+    .then(r => r.json())
+    .then(res => {
+      if (res.success) {
+        refreshItemsDOM(res);
+      }
+    });
+  }
+
+  function updateQty(itemId, delta) {
+    const input = document.getElementById('qty-' + itemId);
+    let newVal = parseFloat(input.value) + delta;
+    if (newVal < 0) newVal = 0;
+    setQty(itemId, newVal);
+  }
+
+  // Remove Item
+  function removeItem(itemId) {
+    fetch('/inventory/assembly/api/item/' + itemId + '/remove/', {
+      method: 'POST',
+      headers: { 'X-CSRFToken': csrftoken, 'Content-Type': 'application/json' },
+      body: JSON.stringify({})
+    })
+    .then(r => r.json())
+    .then(res => {
+      if (res.success) {
+        refreshItemsDOM(res);
+      }
+    });
+  }
+
+  function bindItemEvents() {
+    if (typeof renderIcons === 'function') renderIcons();
+    if (!isEditMode) return;
+    document.querySelectorAll('.item-price').forEach(el => {
+        el.addEventListener('blur', function() {
+            const itemId = this.dataset.id;
+            const newPrice = this.innerText.trim();
+            fetch('/inventory/assembly/api/item/' + itemId + '/update/', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrftoken, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ price: newPrice })
+            })
+            .then(r => r.json())
+            .then(res => {
+                if(res.success) refreshItemsDOM(res);
+            });
+        });
+        el.addEventListener('keydown', function(e) {
+            if(e.key === 'Enter') {
+                e.preventDefault();
+                this.blur();
+            }
+        });
+    });
+  }
+
+  // Initialize
+  document.addEventListener("DOMContentLoaded", () => {
+    {% if perms.inventory.change_assemblyproduct %}
+    {% if not has_items %}
+    // Empty assembly: start in edit mode
+    toggleMode();
+    {% endif %}
+    {% endif %}
+    // Apply initial visibility based on default mode
+    document.querySelectorAll('.mode-switch').forEach(el => {
+      el.style.display = isEditMode ? '' : 'none';
+    });
+    document.querySelectorAll('.mode-view').forEach(el => {
+      el.style.display = isEditMode ? 'none' : '';
+    });
+    bindItemEvents();
+  });
+</script>
+{% endblock extra_js %}
