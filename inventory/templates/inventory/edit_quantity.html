@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% load custom_filters %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ title }}</h1>
+    <p class="page-sub">Current stock is <strong>{{ inventory.quantity }}</strong></p>
+  </div>
+  <div class="breadcrumb">
+    <a href="{% url 'inventory:list' %}">Inventory</a>
+    <i data-icon="chevronRight"></i>
+    <a href="{% url 'inventory:detail' product.pk %}">{{ product.part_name }}</a>
+    <i data-icon="chevronRight"></i>
+    <span>Edit Quantity</span>
+  </div>
+</div>
+
+<div class="content">
+  <div class="page active">
+    <div class="form-container">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Edit Quantity</div>
+            <div class="card-sub">{{ product.part_name }} — {{ product.company_name }}</div>
+          </div>
+          <a href="{% url 'inventory:detail' product.pk %}" class="btn btn-secondary btn-sm">Cancel</a>
+        </div>
+        
+        <div class="card-body form-body">
+          <form method="post" novalidate>
+            {% csrf_token %}
+
+            <div class="form-section">
+              <div class="form-section-title">Update Quantity</div>
+              <p class="info-secondary" style="margin-bottom: 12px; font-size: 13px;">
+                Set the new quantity for this inventory record. The change will be logged automatically.
+              </p>
+              
+              <div class="form-grid">
+                <div class="form-group">
+                  <label class="form-label" for="{{ form.quantity.id_for_label }}">
+                    Quantity <span>*</span>
+                  </label>
+                  {{ form.quantity }}
+                  {% if form.quantity.errors %}
+                  <div class="form-feedback"><div class="form-error">{{ form.quantity.errors }}</div></div>
+                  {% endif %}
+                </div>
+              </div>
+              <div class="form-grid">
+                <div class="form-group" style="grid-column: 1 / -1;">
+                  <label class="form-label" for="{{ form.notes.id_for_label }}">Notes</label>
+                  {{ form.notes }}
+                  {% if form.notes.errors %}
+                  <div class="form-feedback"><div class="form-error">{{ form.notes.errors }}</div></div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+
+            <div class="divider form-divider"></div>
+            
+            <div class="form-actions">
+              <a href="{% url 'inventory:detail' product.pk %}" class="btn btn-secondary">Cancel</a>
+              <button type="submit" class="btn btn-primary">Save Quantity</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

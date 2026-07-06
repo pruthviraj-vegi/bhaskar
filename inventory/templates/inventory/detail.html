@@ -62,6 +62,9 @@
                   <td style="text-align:right;">
                     <div class="action-buttons" style="justify-content:flex-end;">
                       {% if perms.inventory.change_inventory %}
+                      <a href="{% url 'inventory:edit_quantity' inv.pk %}" class="btn btn-primary btn-sm" title="Edit Quantity">
+                        <i data-icon="edit"></i> Edit
+                      </a>
                       <a href="{% url 'inventory:adjust_stock' inv.pk %}" class="btn btn-secondary btn-sm" title="Adjust Stock">
                         Adjust
                       </a>

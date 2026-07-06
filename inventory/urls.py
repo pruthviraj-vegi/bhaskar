@@ -24,6 +24,11 @@ urlpatterns = [
         views.StockReceiveView.as_view(),
         name="receive_stock",
     ),
+    path(
+        "stock/<int:pk>/edit-quantity/",
+        views.InventoryQuantityEditView.as_view(),
+        name="edit_quantity",
+    ),
     # Assembly
     path("assembly/", assembly_view.assembly_list_view, name="assembly_list"),
     path("assembly/fetch/", assembly_view.assembly_fetch_view, name="assembly_fetch"),

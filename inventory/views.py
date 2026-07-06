@@ -23,6 +23,7 @@ from inventory.forms import (
     ProductForm,
     StockAdjustmentForm,
     StockReceiveForm,
+    InventoryQuantityEditForm,
 )
 from inventory.models import Product, Inventory, InventoryLog, StockMovement
 
@@ -116,19 +117,19 @@ class ProductCreateView(RequiredPermissionMixin, CreateView):
 
         initial_quantity = form.cleaned_data.get("initial_quantity")
 
-        if initial_quantity and initial_quantity > 0:
-            Inventory.objects.create(
-                product=self.object, quantity=initial_quantity
-            )
-            InventoryLog.objects.create(
-                product=self.object,
-                type=InventoryLog.TypeChoices.INITIAL,
-                quantity_change=initial_quantity,
-                quantity_before=0,
-                quantity_after=initial_quantity,
-                notes="Initial stock assignment during product creation",
-                created_by=self.request.user,
-            )
+        # initial_quantity is now required and must be > 0
+        Inventory.objects.create(
+            product=self.object, quantity=initial_quantity
+        )
+        InventoryLog.objects.create(
+            product=self.object,
+            type=InventoryLog.TypeChoices.INITIAL,
+            quantity_change=initial_quantity,
+            quantity_before=0,
+            quantity_after=initial_quantity,
+            notes="Initial stock assignment during product creation",
+            created_by=self.request.user,
+        )
 
         messages.success(self.request, "Product created successfully!")
         return response
@@ -383,4 +384,64 @@ class StockReceiveView(RequiredPermissionMixin, CreateView):
         return reverse_lazy("inventory:detail", kwargs={"pk": self.product.pk})
 
 
+# ── Edit Inventory Quantity ────────────────────────────────────────────
+class InventoryQuantityEditView(RequiredPermissionMixin, FormView):
+    """CBV to edit inventory quantity directly from the detail page."""
 
+    template_name = "inventory/edit_quantity.html"
+    required_permission = "inventory.change_inventory"
+    form_class = InventoryQuantityEditForm
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.inventory = None
+        self.product = None
+
+    def dispatch(self, request, *args, **kwargs):
+        self.inventory = get_object_or_404(Inventory, pk=self.kwargs["pk"])
+        self.product = self.inventory.product
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_initial(self):
+        initial = super().get_initial()
+        initial["quantity"] = self.inventory.quantity
+        return initial
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["title"] = f"Edit Quantity: {self.product.part_name}"
+        context["inventory"] = self.inventory
+        context["product"] = self.product
+        return context
+
+    def form_valid(self, form):
+        new_quantity = form.cleaned_data["quantity"]
+        notes = form.cleaned_data.get("notes", "")
+
+        quantity_before = self.inventory.quantity
+        quantity_change = new_quantity - quantity_before
+
+        if quantity_change != 0:
+            self.inventory.quantity = new_quantity
+            self.inventory.save(update_fields=["quantity", "updated_at"])
+
+            InventoryLog.objects.create(
+                product=self.product,
+                type=InventoryLog.TypeChoices.ADJUSTMENT,
+                quantity_change=quantity_change,
+                quantity_before=quantity_before,
+                quantity_after=new_quantity,
+                notes=notes or "Quantity edited from inventory detail",
+                created_by=self.request.user,
+            )
+            messages.success(
+                self.request,
+                f"Quantity updated from {quantity_before} to {new_quantity}.",
+            )
+        else:
+            messages.info(self.request, "No change in quantity was made.")
+
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse_lazy("inventory:detail", kwargs={"pk": self.product.pk})

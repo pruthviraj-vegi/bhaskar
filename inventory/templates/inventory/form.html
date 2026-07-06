@@ -116,9 +116,12 @@
               <div class="form-grid">
                 <div class="form-group">
                   <label class="form-label" for="{{ form.initial_quantity.id_for_label }}">
-                    Initial Quantity
+                    Initial Quantity <span>*</span>
                   </label>
                   {{ form.initial_quantity }}
+                  {% if form.initial_quantity.help_text %}
+                  <div class="info-secondary" style="font-size: 12px; margin-top: 4px;">{{ form.initial_quantity.help_text }}</div>
+                  {% endif %}
                   {% if form.initial_quantity.errors %}
                   <div class="form-feedback"><div class="form-error">{{ form.initial_quantity.errors }}</div></div>
                   {% endif %}

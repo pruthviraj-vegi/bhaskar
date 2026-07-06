@@ -64,15 +64,15 @@ class ProductForm(forms.ModelForm):
         # Only add initial quantity on create
         if not self.instance.pk:
             self.fields["initial_quantity"] = forms.DecimalField(
-                required=False,
-                initial=0,
-                min_value=0,
+                required=True,
+                min_value=0.01,
                 max_digits=10,
                 decimal_places=2,
                 widget=forms.NumberInput(
-                    attrs={"class": "form-input", "placeholder": "0.00", "step": "0.01"}
+                    attrs={"class": "form-input", "placeholder": "Enter quantity", "step": "0.01"}
                 ),
                 label="Initial Quantity",
+                help_text="Quantity must be greater than zero.",
             )
 
         if self.errors:
@@ -126,6 +126,13 @@ class ProductForm(forms.ModelForm):
             if discount > 100:
                 raise forms.ValidationError("Discount cannot exceed 100%.")
         return discount
+
+    def clean_initial_quantity(self):
+        """Validate initial quantity is greater than zero on creation."""
+        qty = self.cleaned_data.get("initial_quantity")
+        if qty is not None and qty <= 0:
+            raise forms.ValidationError("Initial quantity must be greater than zero.")
+        return qty
 
 
 class StockAdjustmentForm(forms.Form):
@@ -251,3 +258,33 @@ class AssemblyProductForm(forms.ModelForm):
                 }
             ),
         }
+
+
+class InventoryQuantityEditForm(forms.Form):
+    """Lightweight form for inline editing of inventory quantity."""
+
+    quantity = forms.DecimalField(
+        min_value=0,
+        max_digits=10,
+        decimal_places=2,
+        widget=forms.NumberInput(
+            attrs={
+                "class": "form-input",
+                "placeholder": "0.00",
+                "step": "0.01",
+                "autofocus": True,
+            }
+        ),
+        label="Quantity",
+    )
+    notes = forms.CharField(
+        required=False,
+        widget=forms.Textarea(
+            attrs={
+                "class": "form-input",
+                "placeholder": "Reason for change (optional)",
+                "rows": 2,
+            }
+        ),
+        label="Notes",
+    )
