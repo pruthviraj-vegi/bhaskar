@@ -14,7 +14,7 @@ from django.views.decorators.http import require_POST
 
 from base.authorized import RequiredPermissionMixin
 from cart.models import Cart, CartItem
-from inventory.models import Product, AssemblyProduct
+from inventory.models import Product, AssemblyProduct, AssemblyProductItem
 
 def get_cart_payload(cart):
     """Helper to return the updated cart HTML & subtotal."""
@@ -101,14 +101,13 @@ class CartDetailView(RequiredPermissionMixin, DetailView):
         cart = self.get_object()
 
         # Pull all cart items and sort by creation time
-        items = cart.items.all().select_related("product")
+        items = cart.items.all().select_related("product", "assembly_source")
 
         # Calculate totals correctly
         total = sum((item.quantity * item.price for item in items))
 
         context["items"] = items
         context["total_amount"] = total
-        # The form for deleting the entire cart or proceeding to checkout goes here if needed.
         return context
 
 
@@ -206,6 +205,7 @@ def cart_add_item_api(request, pk):
                     product=asm_item.product,
                     quantity=quantity * asm_item.quantity_required,
                     price=asm_item.selling_price,
+                    purchased_price=asm_item.product.purchased_price,
                     assembly_source=assembly,
                 )
     else:
@@ -220,6 +220,7 @@ def cart_add_item_api(request, pk):
                 product=product,
                 quantity=quantity,
                 price=product.selling_price,
+                purchased_price=product.purchased_price,
             )
 
     return JsonResponse(get_cart_payload(cart))
@@ -268,6 +269,7 @@ def cart_add_by_barcode_api(request, pk):
                         product=asm_item.product,
                         quantity=1 * asm_item.quantity_required,
                         price=asm_item.selling_price,
+                        purchased_price=asm_item.product.purchased_price,
                         assembly_source=assembly,
                     )
 
@@ -288,7 +290,11 @@ def cart_add_by_barcode_api(request, pk):
         item.save()
     else:
         CartItem.objects.create(
-            cart=cart, product=product, quantity=1, price=product.selling_price
+            cart=cart,
+            product=product,
+            quantity=1,
+            price=product.selling_price,
+            purchased_price=product.purchased_price,
         )
 
     payload = get_cart_payload(cart)
@@ -332,4 +338,5 @@ def cart_remove_item_api(request, item_id):
     item = get_object_or_404(CartItem, pk=item_id, cart__is_active=True)
     cart = item.cart
     item.delete()
+
     return JsonResponse(get_cart_payload(cart))
