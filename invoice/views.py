@@ -142,7 +142,24 @@ def invoice_list_view(request):
 @required_permission("invoice.view_invoice")
 def invoice_fetch_view(request):
     """Return invoice table rows + pagination as JSON for AJAX calls."""
-    qs = Invoice.objects.all().select_related("customer", "sale_user")
+    search_query = request.GET.get("q", "").strip()
+
+    q_filter = Q()
+    if search_query:
+        clean_query = search_query.lstrip("#")
+        if clean_query.isdigit():
+            q_filter &= Q(id=int(clean_query))
+        else:
+            terms = search_query.split()
+            for word in terms:
+                q_filter &= (
+                    Q(customer__name__icontains=word)
+                    | Q(customer__phone__icontains=word)
+                    | Q(sale_user__first_name__icontains=word)
+                    | Q(sale_user__last_name__icontains=word)
+                )
+
+    qs = Invoice.objects.filter(q_filter).select_related("customer", "sale_user")
 
     sort_table = table_sorting(request, INVOICE_VALID_SORT_FIELDS, "-created_at")
     qs = qs.order_by(*sort_table)
@@ -152,7 +169,6 @@ def invoice_fetch_view(request):
     )
 
 
-# ── Create Invoice from Cart ────────────────────────────────────────────
 class CreateInvoiceFromCartView(RequiredPermissionMixin, View):
     """
     GET  → Render invoice form with cart items summary.

@@ -43,7 +43,7 @@ VALID_SORT_FIELDS = {
 def get_customers_data(request):
     """Build and return a filtered, sorted queryset of customers based on request params."""
     # Get search and filter parameters
-    search_query = request.GET.get("search", "")
+    search_query = request.GET.get("q", "").strip()
     # Apply search filter
     filters = Q()
     if search_query:
@@ -51,8 +51,7 @@ def get_customers_data(request):
         for word in terms:
             filters &= (
                 Q(name__icontains=word)
-                | Q(phone_number__icontains=word)
-                | Q(email__icontains=word)
+                | Q(phone__icontains=word)
                 | Q(address__icontains=word)
             )
     # Apply sorting (Multi-column support)

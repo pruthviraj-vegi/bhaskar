@@ -1,0 +1,237 @@
+"""
+Provides search and autosuggestion logic for customers, invoices, products, and suppliers.
+"""
+
+import logging
+import re
+
+from django.core.cache import cache
+from django.http import JsonResponse
+from rapidfuzz import fuzz, process
+
+from customer.models import Customer
+from inventory.models import Product
+from invoice.models import Invoice
+from supplier.models import Supplier
+
+logger = logging.getLogger(__name__)
+# Precompiled regex for speed
+TOKENIZER = re.compile(r"[a-zA-Z0-9]+")
+
+CUSTOMER_SEARCH_FIELDS = ("name", "phone", "address")
+INVOICE_SEARCH_FIELDS = (
+    "id",
+    "customer__name",
+    "customer__phone",
+    "notes",
+)
+PRODUCT_SEARCH_FIELDS = ("company_name", "part_name", "part_number", "barcode")
+
+SUPPLIER_SEARCH_FIELDS = (
+    "name",
+    "contact_person",
+    "email",
+    "phone",
+    "address",
+)
+
+
+def get_instance_tokens(instance, fields):
+    """
+    Helper to extract tokens from a single model instance.
+    Used by signals to check if cache invalidation is actually needed.
+    """
+    tokens = set()
+    for field_path in fields:
+        # Handle related fields (e.g., 'customer__name')
+        value = instance
+        parts = field_path.split("__")
+        try:
+            for part in parts:
+                if value is None:
+                    break
+                value = getattr(value, part)
+        except AttributeError:
+            continue  # Field might not exist or be accessible
+
+        if value:
+            # Tokenize
+            found = TOKENIZER.findall(str(value).lower())
+            tokens.update(t for t in found if len(t) > 2)
+    return tokens
+
+
+def invalidate_cache(cache_key):
+    """
+    Clears the specific cache key.
+    Used by signals to invalidate cache on model changes.
+    """
+    try:
+        cache.delete(cache_key)
+        logger.info("Cache invalidated for key: %s", cache_key)
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        # We catch Exception here because cache backends can raise various
+        # underlying backend-specific errors (e.g., redis.exceptions.ConnectionError,
+        # memcache.Client.MemcachedKeyError) that aren't wrapped by Django.
+        logger.error("Failed to invalidate cache for key %s: %s", cache_key, e)
+
+
+def get_related_words(query, list_of_words, limit=10, score_cutoff=60):
+    """
+    Returns top fuzzy-matched words for a query.
+    - Uses rapidfuzz for speed.
+    - Avoids redundant deduplication.
+    - Limits results early for efficiency.
+    """
+
+    if not query or len(query) < 2 or not list_of_words:
+        return []
+
+    # rapidfuzz can handle iterables directly (no need to force list)
+    matches = process.extract(
+        query.lower(),
+        list_of_words,
+        scorer=fuzz.WRatio,
+        limit=limit,
+        score_cutoff=score_cutoff,
+    )
+
+    # Extract only words (discard scores)
+    return [word for word, score, _ in matches]
+
+
+def get_search_words(
+    query,
+    model,
+    fields,
+    cache_key,
+    cache_timeout=None,
+    max_words=50000,
+):
+    """
+    Optimized helper to build/search word lists from model fields.
+    - Uses Redis/DB cache to avoid rebuilding.
+    - Minimizes memory overhead by streaming.
+    - Tokenizes with set comprehension instead of nested loops.
+    - Limits max_words to avoid huge cache payloads.
+    - Handles cache connection errors gracefully.
+    """
+
+    # 1. Try cache first (Redis-compatible)
+    try:
+        searchable_items = cache.get(cache_key)
+        if searchable_items is not None:
+            return get_related_words(query, searchable_items)
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        # Cache backends can raise various underlying backend-specific errors not wrapped by Django
+        # Redis might be down or misconfigured - log and continue without cache
+        logger.warning(
+            "Cache read failed for key '%s': %s. Proceeding without cache.",
+            cache_key,
+            e,
+        )
+
+    # 2. Stream from DB efficiently (iterator avoids full memory load)
+    queryset = model.objects.values_list(*fields).iterator()
+
+    all_words = set()
+    for row in queryset:
+        # Flatten row → tokenize in one go
+        tokens = {
+            token
+            for field in row
+            if field
+            for token in TOKENIZER.findall(str(field).lower())
+            if len(token) > 2
+        }
+        all_words.update(tokens)
+
+        # Optional: early cutoff if dataset is massive
+        if len(all_words) >= max_words:
+            break
+
+    # 3. Convert to list once
+    searchable_items = list(all_words)
+
+    # 4. Save in cache (Redis-compatible - Django handles serialization)
+    try:
+        cache.set(cache_key, searchable_items, cache_timeout)
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        # Cache backends can raise various underlying backend-specific errors not wrapped by Django
+        # Redis might be down - log but don't fail the request
+        logger.warning(
+            "Cache write failed for key '%s': %s. Results returned without caching.",
+            cache_key,
+            e,
+        )
+
+    # 5. Get suggestions
+    return get_related_words(query, searchable_items)
+
+
+def customer_all_suggestions(request):
+    """View to return JSON suggestions for customers."""
+    query = request.GET.get("q", "").strip()
+
+    if not query or len(query) < 2:
+        return JsonResponse({"success": True, "data": []})
+
+    suggestions = get_search_words(
+        query=query,
+        model=Customer,
+        fields=CUSTOMER_SEARCH_FIELDS,
+        cache_key="customer_search_words",
+    )
+
+    return JsonResponse({"success": True, "data": suggestions})
+
+
+def invoice_all_suggestions(request):
+    """View to return JSON suggestions for invoices."""
+    query = request.GET.get("q", "").strip()
+
+    if not query or len(query) < 2:
+        return JsonResponse({"success": True, "data": []})
+
+    suggestions = get_search_words(
+        query=query,
+        model=Invoice,
+        fields=INVOICE_SEARCH_FIELDS,
+        cache_key="invoice_search_words",
+    )
+
+    return JsonResponse({"success": True, "data": suggestions})
+
+
+def product_suggestions(request):
+    """View to return JSON suggestions for products."""
+    query = request.GET.get("q", "").strip()
+
+    if not query or len(query) < 2:
+        return JsonResponse({"success": True, "data": []})
+
+    suggestions = get_search_words(
+        query=query,
+        model=Product,
+        fields=PRODUCT_SEARCH_FIELDS,
+        cache_key="product_search_words",
+    )
+
+    return JsonResponse({"success": True, "data": suggestions})
+
+
+def supplier_all_suggestions(request):
+    """View to return JSON suggestions for suppliers."""
+    query = request.GET.get("q", "").strip()
+
+    if not query or len(query) < 2:
+        return JsonResponse({"success": True, "data": []})
+
+    suggestions = get_search_words(
+        query=query,
+        model=Supplier,
+        fields=SUPPLIER_SEARCH_FIELDS,
+        cache_key="supplier_search_words",
+    )
+
+    return JsonResponse({"success": True, "data": suggestions})

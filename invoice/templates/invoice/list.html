@@ -25,7 +25,7 @@
       <div class="filters-row">
         <div class="search-box search-box-wide">
           <i data-icon="search"></i>
-          <input type="search" name="q" placeholder="Search invoices…" autofocus autocomplete="off"/>
+          <input type="search" id="search" name="q" placeholder="Search invoices…" autofocus autocomplete="off"/>
         </div>
         <button type="submit" class="btn btn-primary" onclick="reloadTable('invoice-table')">
           <i data-icon="search"></i>
@@ -48,7 +48,6 @@
               <th data-sort="invoice_type">Type</th>
               <th>Payment</th>
               <th data-sort="total_amount" style="text-align: right;">Total</th>
-              <th>Store</th>
               <th data-sort="created_at">Date</th>
               <th>Actions</th>
             </tr>
@@ -56,7 +55,7 @@
           <tbody id="invoice-table-body">
             <!-- Data loaded via AJAX (fetchData.js) -->
             <tr>
-                <td colspan="8" class="text-center loading-cell">
+                <td colspan="7" class="text-center loading-cell">
                     <div class="loading">
                         <i class="fas fa-spinner fa-spin"></i> Loading...
                     </div>
@@ -75,12 +74,28 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="{% static 'js/wordSuggestion.js' %}"></script>
+<script>
+    urls = {
+        fetch: '{% url "invoice:fetch" %}',
+        suggestions: '{% url "suggestions:invoice_all" %}',
+    }
+</script>
 <script>
     document.addEventListener("DOMContentLoaded", function() {
+        $('#search').wordSuggestion({
+            url: urls.suggestions,
+            placeholder: 'Type to search invoices...',
+            minLength: 2,
+            onSelect: function(suggestion, input) {
+                reloadTable('invoice-table');
+            }
+        });
+
         initTableAjax(
             'invoice-search-form', 
             'invoice-table', 
-            '{% url "invoice:fetch" %}', 
+            urls.fetch, 
             {
                 method: 'GET',
                 debounceDelay: 400,

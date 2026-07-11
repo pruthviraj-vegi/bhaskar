@@ -25,7 +25,7 @@
       <div class="filters-row">
         <div class="search-box search-box-wide">
           <i data-icon="search"></i>
-          <input type="search" name="q" value="{{ search_query }}" placeholder="Search products…" autofocus autocomplete="off"/>
+          <input type="search" id="search" name="search" value="{{ search_query }}" placeholder="Search products…" autofocus autocomplete="off"/>
         </div>
         <button type="submit" class="btn btn-primary" onclick="reloadTable('product-table')">
           <i data-icon="search"></i>
@@ -81,12 +81,29 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="{% static 'js/wordSuggestion.js' %}"></script>
+<script>
+        urls = {
+            fetch: '{% url "inventory:fetch" %}',
+            suggestions: '{% url "suggestions:product_suggestions" %}',
+        }
+    </script>
 <script>
     document.addEventListener("DOMContentLoaded", function() {
+      $('#search').wordSuggestion({
+                url: urls.suggestions,
+                placeholder: 'Type to search products...',
+                minLength: 2,
+                onSelect: function(suggestion, input) {
+                    // Auto-reload table when suggestion is selected
+                    reloadTable('product-table');
+                }
+            });
+            
         initTableAjax(
             'product-search-form', 
             'product-table', 
-            '{% url "inventory:fetch" %}', 
+            urls.fetch, 
             {
                 method: 'GET',
                 debounceDelay: 400,

@@ -2981,6 +2981,91 @@ td.td-mono {
 }
 .select2-search__field {
   border-radius: 4px !important;
-  border-color: var(--border, #e2e8f0) !important;
+  border-color: var(--border, #e2e0d6) !important;
   padding: 6px 8px !important;
 }
+
+/* ========================================
+   WORD SUGGESTION SYSTEM STYLES
+   ======================================== */
+
+.word-suggestion-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r, 8px);
+  box-shadow: var(--sh-md);
+  z-index: 1000;
+  max-height: 200px;
+  overflow-y: auto;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: all 0.2s ease;
+  margin-top: 4px;
+}
+
+.word-suggestion-dropdown.show {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.word-suggestion-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: all 0.16s ease;
+  border-bottom: 1px solid var(--border);
+}
+
+.word-suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.word-suggestion-item:hover {
+  background: var(--surface2);
+}
+
+.word-suggestion-item.selected {
+  background: var(--accent);
+  color: #ffffff;
+}
+
+.suggestion-word {
+  font-weight: 500;
+  color: var(--text);
+  font-size: 13px;
+}
+
+.word-suggestion-item.selected .suggestion-word {
+  color: #ffffff;
+}
+
+.word-suggestion-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  color: var(--text2);
+  font-size: 13px;
+  gap: 8px;
+}
+
+.word-suggestion-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  color: var(--text2);
+  text-align: center;
+  font-size: 13px;
+  gap: 4px;
+}
+

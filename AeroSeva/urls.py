@@ -31,4 +31,5 @@ urlpatterns = [
     path("user/", include("user.urls")),  # User app
     path("report/", include("report.urls")),  # Report app
     path("quotation/", include("quotation.urls")),  # Quotation app
+    path("suggestions/", include("base.urls_suggestions")),  # Suggestions app
 ]

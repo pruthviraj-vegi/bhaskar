@@ -3,17 +3,16 @@ Views for the Inventory app — Product CRUD with AJAX table support.
 """
 
 import logging
-from decimal import Decimal, InvalidOperation
 
 from django.contrib import messages
-from django.db.models import Sum
-from django.http import JsonResponse
+from django.db.models import Sum, Q
+
 from django.shortcuts import render
 from django.urls import reverse_lazy
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404
 
 from django.db import transaction
-from django.views.generic import FormView, TemplateView
+from django.views.generic import FormView
 
 from django.views.generic import CreateView, DeleteView, DetailView, UpdateView
 
@@ -43,18 +42,48 @@ PRODUCT_VALID_SORT_FIELDS = {
 }
 
 
+def get_data(request):
+    """Retrieve and filter variants based on request parameters."""
+
+    # Get search and filter parameters
+    search_query = request.GET.get("search", "")
+
+    print(search_query, "search_query")
+
+    # Apply search filter
+    filters = Q()
+    if search_query:
+        # Split query into words so multiple terms can be matched
+        terms = search_query.split()
+        for term in terms:
+            filters &= (
+                Q(company_name__icontains=term)
+                | Q(part_name__icontains=term)
+                | Q(part_number__icontains=term)
+                | Q(barcode__icontains=term)
+            )
+
+    data = Product.objects.filter(filters)
+
+    data = data.annotate(stock_qty=Sum("inventories__quantity"))
+
+    # Apply sorting
+    valid_sorts = table_sorting(request, PRODUCT_VALID_SORT_FIELDS, "-created_at")
+    data = data.order_by(*valid_sorts)
+
+    return data
+
+
 @required_permission("inventory.view_product")
 def product_fetch_view(request):
     """Return product table rows + pagination as JSON for AJAX calls."""
-    qs = Product.objects.annotate(
-        stock_qty=Sum("inventories__quantity")
-    )
 
-    sort_table = table_sorting(request, PRODUCT_VALID_SORT_FIELDS, "-id")
-    qs = qs.order_by(*sort_table)
+    data = get_data(request)
+
+    print(data)
 
     return render_paginated_response(
-        request, qs, "inventory/fetch.html", per_page=PRODUCTS_PER_PAGE
+        request, data, "inventory/fetch.html", per_page=PRODUCTS_PER_PAGE
     )
 
 
@@ -118,9 +147,7 @@ class ProductCreateView(RequiredPermissionMixin, CreateView):
         initial_quantity = form.cleaned_data.get("initial_quantity")
 
         # initial_quantity is now required and must be > 0
-        Inventory.objects.create(
-            product=self.object, quantity=initial_quantity
-        )
+        Inventory.objects.create(product=self.object, quantity=initial_quantity)
         InventoryLog.objects.create(
             product=self.object,
             type=InventoryLog.TypeChoices.INITIAL,
@@ -296,8 +323,6 @@ class StockAdjustmentView(RequiredPermissionMixin, FormView):
         return reverse_lazy("inventory:detail", kwargs={"pk": self.product.pk})
 
 
-
-
 # ── Receive Stock──────────────────────────────────────────
 class StockReceiveView(RequiredPermissionMixin, CreateView):
     """CBV to receive newly purchased stock into a specific store."""
@@ -348,7 +373,9 @@ class StockReceiveView(RequiredPermissionMixin, CreateView):
             price_changes.append(f"Sell: {old_sp} → {new_sp}")
 
         if price_changes:
-            self.product.save(update_fields=["purchased_price", "selling_price", "updated_at"])
+            self.product.save(
+                update_fields=["purchased_price", "selling_price", "updated_at"]
+            )
 
         # 1. Update Inventory (create if doesn't exist)
         to_inv, _ = Inventory.objects.get_or_create(
@@ -376,7 +403,7 @@ class StockReceiveView(RequiredPermissionMixin, CreateView):
         messages.success(
             self.request,
             f"Successfully received {movement.quantity} "
-            f"{self.product.get_uom_display()}."
+            f"{self.product.get_uom_display()}.",
         )
         return super().form_valid(form)
 
