@@ -288,7 +288,7 @@ class CreateInvoiceFromCartView(RequiredPermissionMixin, View):
                     "title": "Create Invoice",
                 },
             )
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-exception-caught
             logger.exception("Invoice creation failed: %s", e)
             messages.error(request, "Something went wrong. Please try again.")
             return render(

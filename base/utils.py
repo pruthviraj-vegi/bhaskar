@@ -62,8 +62,9 @@ def get_financial_year(value):
 
 class StringProcessor:
     """
-    This class processes strings by cleaning them (removing spaces, slashes, question marks, and commas)
-    and converting them to different cases. It also handles the case where None or an empty string is passed.
+    This class processes strings by cleaning them (removing spaces, slashes,
+    question marks, and commas) and converting them to different cases.
+    It also handles the case where None or an empty string is passed.
     """
 
     def __init__(self, input_string=None):
@@ -185,7 +186,7 @@ def get_periodic_data(date_filter, current_start, current_end):
 
         return previous_start, previous_end, "monthly"
 
-    elif date_filter == "last_quarter":
+    if date_filter == "last_quarter":
         # Get 2 quarters ago (6 months back)
 
         last_month = current_start.month - 6
@@ -204,7 +205,7 @@ def get_periodic_data(date_filter, current_start, current_end):
             "quarterly",
         )
 
-    elif date_filter == "last_finance":
+    if date_filter == "last_finance":
         # Get 2 financial years ago
         if current_start.month >= 4:
             previous_start = current_start.replace(
@@ -237,12 +238,12 @@ def get_period_label(start_date, end_date, period_type):
     """
     if period_type == "daily":
         return start_date.strftime("%B %d, %Y")
-    elif period_type == "monthly":
+    if period_type == "monthly":
         return f"{start_date.strftime('%B %d')} - {end_date.strftime('%B %d, %Y')}"
-    elif period_type == "quarterly":
+    if period_type == "quarterly":
         return f"Q{((start_date.month - 1) // 3) + 1} {start_date.year}"
-    else:  # yearly
-        return f"FY {start_date.year}-{end_date.year}"
+    # yearly
+    return f"FY {start_date.year}-{end_date.year}"
 
 
 def render_paginated_response(
@@ -313,7 +314,7 @@ def table_sorting(request, valid_sorts=None, default_sort="-id"):
     if not sort_param:
         if isinstance(default_sort, str) and "," in default_sort:
             return [s.strip() for s in default_sort.split(",")]
-        elif isinstance(default_sort, (list, tuple)):
+        if isinstance(default_sort, (list, tuple)):
             return list(default_sort)
         return [default_sort]
 
@@ -339,14 +340,14 @@ def table_sorting(request, valid_sorts=None, default_sort="-id"):
     if not final_sorts:
         if isinstance(default_sort, str) and "," in default_sort:
             return [s.strip() for s in default_sort.split(",")]
-        elif isinstance(default_sort, (list, tuple)):
+        if isinstance(default_sort, (list, tuple)):
             return list(default_sort)
         return [default_sort]
 
     return final_sorts
 
 
-def build_filtered_queryset(
+def build_filtered_queryset(  # pylint: disable=too-many-positional-arguments
     request,
     queryset,
     search_fields,

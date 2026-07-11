@@ -1,3 +1,5 @@
+"""Quotation app URL configuration."""
+
 from django.urls import path
 from quotation import views
 

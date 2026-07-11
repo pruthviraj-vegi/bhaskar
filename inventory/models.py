@@ -57,14 +57,14 @@ class Product(SoftDeleteModel):
         """
         # Ensure object has an ID (save if needed)
         if not self.pk:
-            super(Product, self).save()
+            super().save()
 
         # Generate barcode: 6 digits with zero padding + suffix "3"
         self.barcode = f"{self.id:06d}3"
 
         # Save the barcode if requested
         if save:
-            super(Product, self).save(update_fields=["barcode"])
+            super().save(update_fields=["barcode"])
 
         return self.barcode
 
@@ -123,8 +123,8 @@ class Inventory(SoftDeleteModel):
     @property
     def available_quantity(self):
         """Get available quantity subtracting active carts."""
-        from django.db.models import Sum
-        from cart.models import CartItem
+        from django.db.models import Sum  # pylint: disable=import-outside-toplevel
+        from cart.models import CartItem  # pylint: disable=import-outside-toplevel
 
         reserved = (
             CartItem.objects.filter(
@@ -276,14 +276,14 @@ class AssemblyProduct(SoftDeleteModel):
         """
         # Ensure object has an ID (save if needed)
         if not self.pk:
-            super(AssemblyProduct, self).save()
+            super().save()
 
         # Generate barcode: 6 digits with zero padding + suffix "3"
         self.barcode = f"3{self.id:03d}"
 
         # Save the barcode if requested
         if save:
-            super(AssemblyProduct, self).save(update_fields=["barcode"])
+            super().save(update_fields=["barcode"])
 
         return self.barcode
 

@@ -10,8 +10,9 @@ class InventoryService:
 
     @staticmethod
     @transaction.atomic
-    def record_sale(inventory, quantity, user, invoice_item=None,
+    def record_sale(inventory, quantity, user, invoice_item=None,  # pylint: disable=unused-argument,too-many-positional-arguments
                     reference_number="", notes=""):
+        """Record a sale, deducting from inventory and creating a log entry."""
         inv = Inventory.objects.select_for_update().get(pk=inventory.pk)
         qty = Decimal(str(quantity))
         qty_before = inv.quantity

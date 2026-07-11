@@ -2,11 +2,8 @@
 Decorators and mixins for the application.
 """
 
-import time
 from functools import wraps
 
-from django.conf import settings
-from django.db import connection
 from django.shortcuts import render
 
 

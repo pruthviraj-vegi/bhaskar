@@ -1,9 +1,7 @@
 """Forms for inventory management."""
 
-import re
-
 from django import forms
-from .models import Product, AssemblyProduct
+from .models import Product, AssemblyProduct, StockMovement
 
 
 class ProductForm(forms.ModelForm):
@@ -190,9 +188,7 @@ class StockReceiveForm(forms.ModelForm):
         label="Selling Price (optional — updates product if changed)",
     )
 
-    class Meta:
-        from .models import StockMovement
-
+    class Meta:  # pylint: disable=missing-class-docstring
         model = StockMovement
         fields = ["quantity", "notes"]
         widgets = {
@@ -218,7 +214,9 @@ class StockReceiveForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         if product:
             self.fields["purchased_price"].initial = product.purchased_price
-            self.fields["purchased_price"].widget.attrs["placeholder"] = str(product.purchased_price)
+            self.fields["purchased_price"].widget.attrs["placeholder"] = (
+                str(product.purchased_price)
+            )
             self.fields["selling_price"].initial = product.selling_price
             self.fields["selling_price"].widget.attrs["placeholder"] = str(product.selling_price)
 
@@ -233,13 +231,10 @@ class StockReceiveForm(forms.ModelForm):
                     break
 
 
-"""Forms for the Assembly app."""
-
-
 class AssemblyProductForm(forms.ModelForm):
     """Form for creating or updating an AssemblyProduct."""
 
-    class Meta:
+    class Meta:  # pylint: disable=missing-class-docstring
         model = AssemblyProduct
         fields = ["name", "description"]
         widgets = {
@@ -262,7 +257,6 @@ class AssemblyProductForm(forms.ModelForm):
 
 class InventoryQuantityEditForm(forms.Form):
     """Lightweight form for inline editing of inventory quantity."""
-
     quantity = forms.DecimalField(
         min_value=0,
         max_digits=10,

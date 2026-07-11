@@ -81,13 +81,13 @@ def _convert_to_numeric(value):
 
         return numeric_value
 
-    except (ValueError, OverflowError) as e:
-        logger.warning(f"Failed to convert '{value}' to numeric: {e}")
+    except (ValueError, OverflowError):
+        logger.warning("Failed to convert '%s' to numeric", value)
         return None
 
 
 @register.filter(name="currency")
-def currency(value, arg=None):
+def currency(value, arg=None):  # pylint: disable=unused-argument
     """
     Bulletproof currency formatter that handles strings, integers, floats, and None values.
     Converts string inputs to appropriate numeric types before formatting.
@@ -103,18 +103,18 @@ def currency(value, arg=None):
             return "0.00"
 
         data = locale.format_string(
-            "%%.%df" % formate["frac_digits"],
+            f"%.{formate['frac_digits']}f",
             numeric_value,
             grouping=formate["grouping"],
             monetary=False,
         )
         return data
-    except (TypeError, ValueError, locale.Error) as e:
+    except (TypeError, ValueError, locale.Error):
         return "0.00"
 
 
 @register.filter(name="currency_nonDecimal")
-def currency_nonDecimal(value, arg=None):
+def currency_non_decimal(value, arg=None):  # pylint: disable=unused-argument
     """
     Bulletproof non-decimal currency formatter for integer values.
     """
@@ -137,19 +137,20 @@ def currency_nonDecimal(value, arg=None):
             grouping=formate["grouping"],
             monetary=False,
         )
-    except (TypeError, ValueError, locale.Error) as e:
+    except (TypeError, ValueError, locale.Error):
         return "0"
 
 
 @register.filter(name="phone_number")
 def phone_number(value):
+    """Format a 10-digit phone number with a space in the middle."""
     if value is None:
         return ""
     try:
         numbers = value.replace(" ", "")
         return f"{numbers[:5]} {numbers[5:]}" if len(numbers) == 10 else numbers
-    except (TypeError, ValueError) as e:
-        logger.error(e)
+    except (TypeError, ValueError):
+        logger.error("Phone number formatting error for value: %s", value)
         return value
 
 
@@ -174,6 +175,7 @@ def assembly_totals(assembly):
 
 @register.filter(name="range")
 def filter_range(start):
+    """Return a range object from the given start value."""
     try:
         return range(int(start))
     except (TypeError, ValueError):
@@ -201,6 +203,6 @@ def currency_to_word(value, _arg=None):
     try:
         amount = float(value)
         return num2words(amount, lang="en_IN", to="currency", currency="INR").title()
-    except (ValueError, TypeError) as e:
-        logger.error("Currency to word formatting error for value '%s': %s", value, e)
+    except (ValueError, TypeError):
+        logger.error("Currency to word formatting error for value '%s'", value)
         return value

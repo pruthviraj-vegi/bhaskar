@@ -35,8 +35,7 @@ def login_view(request):
                 # Redirect to 'next' param or dashboard
                 next_url = request.GET.get("next", "base:home")
                 return redirect(next_url)
-            else:
-                error = "Invalid phone number or password."
+            error = "Invalid phone number or password."
         else:
             error = "Please enter both phone number and password."
 

@@ -185,8 +185,9 @@ class SupplierInvoiceCreateView(RequiredPermissionMixin, CreateView):
     required_permission = "supplier.add_supplierinvoice"
 
     def dispatch(self, request, *args, **kwargs):
-
+        # pylint: disable=attribute-defined-outside-init
         self.supplier = get_object_or_404(Supplier, pk=self.kwargs["pk"])
+
         return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
@@ -220,7 +221,7 @@ class SupplierPaymentCreateView(RequiredPermissionMixin, CreateView):
     required_permission = "supplier.add_supplierpayment"
 
     def dispatch(self, request, *args, **kwargs):
-
+        # pylint: disable=attribute-defined-outside-init
         self.supplier = get_object_or_404(Supplier, pk=self.kwargs["pk"])
         return super().dispatch(request, *args, **kwargs)
 
@@ -336,7 +337,7 @@ class SupplierPaymentDeleteView(RequiredPermissionMixin, DeleteView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["title"] = f"Delete Payment"
+        context["title"] = "Delete Payment"
         context["supplier"] = self.object.supplier
         return context
 

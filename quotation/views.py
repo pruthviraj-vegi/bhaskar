@@ -9,7 +9,7 @@ from decimal import Decimal, InvalidOperation
 from django.contrib import messages
 from django.db.models import Count, Sum
 from django.http import JsonResponse
-from django.shortcuts import get_object_or_404, redirect, render
+from django.shortcuts import get_object_or_404, render
 from django.template.loader import render_to_string
 from django.urls import reverse_lazy
 from django.views.decorators.http import require_POST
@@ -129,6 +129,7 @@ def api_add_item(request, session_id):
         quantity=quantity,
     )
     return _session_response(quotation, request)
+
 
 
 @required_permission("quotation.change_quotationitem")

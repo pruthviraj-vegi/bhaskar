@@ -25,7 +25,7 @@ class Cart(models.Model):
     @property
     def total_amount(self):
         """calculate total amount precisely for the cart"""
-        from django.db.models import F, Sum
+        from django.db.models import F, Sum  # pylint: disable=import-outside-toplevel
         result = self.items.aggregate(total=Sum(F("price") * F("quantity")))
         return result["total"] or 0
 

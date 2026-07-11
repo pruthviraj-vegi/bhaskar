@@ -1,3 +1,3 @@
-from django.db import models
+"""Base app models."""
 
 # Create your models here.

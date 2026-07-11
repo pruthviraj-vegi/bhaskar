@@ -100,7 +100,7 @@ def get_related_words(query, list_of_words, limit=10, score_cutoff=60):
     return [word for word, score, _ in matches]
 
 
-def get_search_words(
+def get_search_words(  # pylint: disable=too-many-positional-arguments
     query,
     model,
     fields,

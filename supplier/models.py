@@ -156,6 +156,7 @@ class SupplierInvoice(SoftDeleteModel):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
+        """Metadata for SupplierInvoice."""
         unique_together = ("supplier", "invoice_number", "invoice_date")
         ordering = ["-invoice_date"]
         indexes = [

@@ -4,9 +4,9 @@ import base64
 import io
 
 from barcode import Code128
+from barcode.base import Barcode
 from barcode.writer import SVGWriter
 from django.shortcuts import render
-from barcode.base import Barcode
 
 
 from inventory.models import Product

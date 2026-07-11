@@ -73,6 +73,8 @@ class SoftDeleteModel(models.Model):
         self.soft_delete()
 
     class Meta:
+        """Metadata for SoftDeleteModel."""
+
         abstract = True  # This makes it an abstract model
 
 

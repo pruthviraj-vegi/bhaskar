@@ -1,3 +1,3 @@
-from django.contrib import admin
+"""Cart app admin configuration."""
 
 # Register your models here.

@@ -2,6 +2,9 @@
 Signals for cache invalidation across models.
 """
 
+# Unused arguments in receiver functions are required by Django's signal API.
+# pylint: disable=unused-argument
+
 import logging
 
 from django.db.models.signals import post_delete, post_save, pre_save

@@ -50,7 +50,7 @@ def assembly_fetch_view(request):
 
     if sort_param:
         sort_fields = [f.strip() for f in sort_param.split(",") if f.strip()]
-        valid_fields = {f.name for f in AssemblyProduct._meta.get_fields()}
+        valid_fields = {f.name for f in AssemblyProduct._meta.get_fields()}  # pylint: disable=protected-access
         validated = []
         for field in sort_fields:
             clean = field.lstrip("-")

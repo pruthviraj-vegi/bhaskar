@@ -4,17 +4,16 @@ Cart Management Views
 
 import json
 from decimal import Decimal
-from django.template.loader import render_to_string
-from django.shortcuts import get_object_or_404, redirect
-from django.urls import reverse_lazy
 from django.http import JsonResponse
-from django.contrib import messages
-from django.views.generic import ListView, CreateView, DetailView, DeleteView
+from django.shortcuts import get_object_or_404, redirect
+from django.template.loader import render_to_string
+from django.urls import reverse_lazy
 from django.views.decorators.http import require_POST
+from django.views.generic import CreateView, DeleteView, DetailView, ListView
 
 from base.authorized import RequiredPermissionMixin
 from cart.models import Cart, CartItem
-from inventory.models import Product, AssemblyProduct, AssemblyProductItem
+from inventory.models import Product, AssemblyProduct
 
 def get_cart_payload(cart):
     """Helper to return the updated cart HTML & subtotal."""
@@ -187,7 +186,7 @@ def cart_add_item_api(request, pk):
         item_type = data.get("type", "product")
         product_id = data.get("product_id")
         quantity = Decimal(str(data.get("quantity", 1)))
-    except (ValueError, TypeError, json.JSONDecodeError, Exception):  #
+    except (ValueError, TypeError, json.JSONDecodeError):
         return JsonResponse({"success": False, "error": "Invalid payload format"})
 
     if item_type == "assembly":

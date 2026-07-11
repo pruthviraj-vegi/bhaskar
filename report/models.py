@@ -1,3 +1,3 @@
-from django.db import models
+"""Report app models."""
 
 # Create your models here.
