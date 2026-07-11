@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════
-   GarageOS — Workshop Management
+   AeroOS — Workshop Management
    styles.css
    ══════════════════════════════════════════ */
 
@@ -144,19 +144,23 @@ ul {
   margin-right: 12px;
 }
 .brand-logo {
-  width: 32px;
-  height: 32px;
-  border-radius: 7px;
-  background: var(--accent);
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  overflow: hidden;
+}
+.brand-logo img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
 }
 .brand-logo svg {
-  width: 17px;
-  height: 17px;
-  fill: #fff;
+  width: 20px;
+  height: 20px;
+  fill: var(--accent);
 }
 .brand-name {
   font-weight: 600;
@@ -403,6 +407,51 @@ ul {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* ========================================
+   TOAST NOTIFICATIONS
+   ======================================== */
+.toast {
+  position: fixed;
+  top: calc(var(--topbar-height));
+  right: 1rem;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  padding: 0.85rem 1.25rem;
+  border-radius: 0.5rem;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-color);
+  z-index: 10000;
+  transform: translateX(100%);
+  transition: transform 0.3s ease;
+  max-width: 280px;
+  font-size: 0.8rem;
+}
+
+.toast.show {
+  transform: translateX(0);
+}
+
+.toast-info {
+  background: var(--primary);
+  border-left: 4px solid var(--bg-surface);
+  color: var(--text-on-primary);
+}
+
+.toast-success {
+  background: var(--success);
+  border-left: 4px solid var(--bg-surface);
+}
+
+.toast-warning {
+  background: var(--warning);
+  border-left: 4px solid var(--bg-surface);
+}
+
+.toast-error {
+  background: var(--danger);
+  border-left: 4px solid var(--bg-surface);
 }
 
 /* ══════════════════════════════════════════

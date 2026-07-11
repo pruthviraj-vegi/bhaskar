@@ -1,0 +1,27 @@
+{% load custom_filters %}
+{% for part in page_obj %}
+<tr class="part-row">
+  <td class="td-mono">{{ part.barcode|default:"-" }}</td>
+  <td>
+    <div style="font-weight: 500; color: var(--text);">{{ part.name }}</div>
+  </td>
+  <td style="text-align: right;" class="td-mono">{{ part.selling_price|currency }}</td>
+  <td style="text-align: right;">
+    <div style="display: flex; justify-content: flex-end; gap: 8px;">
+      <a href="{% url 'quotation:part_update' part.pk %}" class="action-btn" title="Edit">
+        <i data-icon="edit"></i>
+      </a>
+      <a href="{% url 'quotation:part_delete' part.pk %}" class="action-btn delete" title="Delete">
+        <i data-icon="trash"></i>
+      </a>
+    </div>
+  </td>
+</tr>
+{% empty %}
+<tr class="empty-state-row">
+  <td colspan="4" class="empty-state" style="text-align: center; padding: 40px;">
+    <div style="font-weight: 500; margin-bottom: 4px;">No quotation parts found</div>
+    <div style="color: var(--text3); font-size: 13px;">Adjust search filters or create a new part.</div>
+  </td>
+</tr>
+{% endfor %}

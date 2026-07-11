@@ -9,75 +9,88 @@
     <h1 class="page-title">{{ title }}</h1>
     <p class="page-sub">All quotations</p>
   </div>
-  <div class="header-actions">
-    {% if perms.quotation.add_quotation %}
-    <a href="{% url 'quotation:create' %}" class="btn btn-primary">
-      <i data-icon="plus"></i> New Quotation
-    </a>
-    {% endif %}
+  <div class="breadcrumb">
+    Dashboard <i data-icon="chevronRight"></i> <span>Quotations</span>
   </div>
 </div>
 
 <div class="content">
   <div class="page active">
+    
+    <!-- Page Actions (Search & Navigation) -->
+    <form class="page-actions" id="quotation-search-form" onsubmit="return false;">
+      <div class="filters-row">
+        <div class="search-box search-box-wide">
+          <i data-icon="search"></i>
+          <input type="search" id="search" name="search" placeholder="Search quotations by name, type, phone…" autocomplete="off" autofocus>
+        </div>
+      </div>
+      <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+        <a href="{% url 'quotation:parts_list' %}" class="btn" style="background: var(--surface2); color: var(--text);">
+          <i data-icon="settings"></i> Manage Parts
+        </a>
+        <a href="{% url 'quotation:assemblies_list' %}" class="btn" style="background: var(--surface2); color: var(--text);">
+          <i data-icon="settings"></i> Manage Assemblies
+        </a>
+        {% if perms.quotation.add_quotation %}
+        <a href="{% url 'quotation:create' %}" class="btn btn-primary">
+          <i data-icon="plus"></i> New Quotation
+        </a>
+        {% endif %}
+      </div>
+    </form>
+
+    <!-- Quotations Card -->
     <div class="card">
       <div class="card-header">
         <div>
           <div class="card-title">Quotations</div>
-          <span class="info-secondary">{{ sessions|length }} quotation{{ sessions|length|pluralize }}</span>
+          <span class="info-secondary">Search and sort recorded quotations</span>
         </div>
       </div>
 
       <div class="table-wrap">
-        <table>
+        <table id="quotation-table">
           <thead>
             <tr>
-              <th>Name</th>
-              <th>Type</th>
-              <th>Phone</th>
-              <th>Items</th>
+              <th data-sort="name">Name</th>
+              <th data-sort="type">Type</th>
+              <th data-sort="phone">Phone</th>
+              <th style="text-align: center;">Items</th>
               <th>Status</th>
-              <th style="text-align: right;">Total</th>
+              <th data-sort="total" style="text-align: right;">Total</th>
               <th style="text-align: right;">Actions</th>
             </tr>
           </thead>
-          <tbody>
-            {% for s in sessions %}
+          <tbody id="quotation-table-body">
+            <!-- Data loaded via AJAX (fetchData.js) -->
             <tr>
-              <td>
-                <div class="cell-profile">
-                  <div class="avatar blue">{{ s.name|first|upper }}</div>
-                  <div class="info-stacked">
-                    <div class="info-primary">{{ s.name }}</div>
-                  </div>
-                </div>
-              </td>
-              <td>{{ s.type }}</td>
-              <td class="td-mono">{{ s.phone|phone_number }}</td>
-              <td class="td-mono">{{ s.item_count }}</td>
-              <td><span class="badge">{{ s.get_status_display }}</span></td>
-              <td style="text-align: right;" class="td-mono">{{ s.total|default:0|currency }}</td>
-              <td style="text-align: right;">
-                <div style="display: flex; justify-content: flex-end; gap: 8px;">
-                  <a href="{% url 'quotation:detail' s.pk %}" class="action-btn" title="Open">
-                    <i data-icon="eye"></i>
-                  </a>
+              <td colspan="7" class="text-center loading-cell">
+                <div class="loading">
+                  <i class="fas fa-spinner fa-spin"></i> Loading...
                 </div>
               </td>
             </tr>
-            {% empty %}
-            <tr>
-              <td colspan="7" class="empty-state" style="text-align: center; padding: 40px;">
-                <i data-icon="revenue" style="width: 32px; height: 32px; color: var(--text3); margin-bottom: 12px; display: inline-block;"></i>
-                <div style="font-weight: 500; margin-bottom: 4px;">No quotations yet</div>
-                <div style="color: var(--text3); font-size: 13px;">Create a new quotation to get started.</div>
-              </td>
-            </tr>
-            {% endfor %}
           </tbody>
         </table>
       </div>
+      
+      <!-- Pagination Container -->
+      <div id="quotation-table_pagination"></div>
     </div>
   </div>
 </div>
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+      initTableAjax('quotation-search-form', 'quotation-table', '{% url "quotation:fetch" %}', {
+          method: 'GET',
+          debounceDelay: 400,
+          placeholder: 'Loading quotations...'
+      }, true);
+      initTableSorting('quotation-table');
+  });
+</script>
+{% endblock extra_js %}
 {% endblock %}

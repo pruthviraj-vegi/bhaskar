@@ -67,7 +67,7 @@ def generate_barcode(request, pk):
 def create_quotation(request, pk):
     """Create and render a quotation print page for the given quotation ID."""
     quotation = Quotation.objects.get(id=pk)
-    items = QuotationItem.objects.filter(quotation_id=pk)
+    items = QuotationItem.objects.filter(quotation_id=pk, parent__isnull=True)
     total = sum(item.total_price for item in items)
     return render(request, "report/quotation_A5.html", {
         "details": quotation,

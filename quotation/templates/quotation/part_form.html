@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ title }}</h1>
+    <p class="page-sub">Fill in the details for the quotation part</p>
+  </div>
+  <div class="breadcrumb">
+    <a href="{% url 'quotation:list' %}">Quotation</a> 
+    <i data-icon="chevronRight"></i> 
+    <a href="{% url 'quotation:parts_list' %}">Parts</a> 
+    <i data-icon="chevronRight"></i> 
+    <span>{{ title }}</span>
+  </div>
+</div>
+
+<div class="content">
+  <div class="page active">
+    <div class="form-container">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">{{ title }}</div>
+            <div class="card-sub">Quotation Part Information</div>
+          </div>
+          <a href="{% url 'quotation:parts_list' %}" class="btn btn-secondary btn-sm">Back to List</a>
+        </div>
+        
+        <div class="card-body form-body">
+          <form method="post" novalidate>
+            {% csrf_token %}
+            
+            <div class="form-section">
+              <div class="form-section-title">Part Identity & Pricing</div>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label class="form-label" for="{{ form.name.id_for_label }}">
+                    Part Name <span>*</span>
+                  </label>
+                  {{ form.name }}
+                  {% if form.name.errors %}
+                  <div class="form-feedback"><div class="form-error">{{ form.name.errors }}</div></div>
+                  {% endif %}
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="{{ form.barcode.id_for_label }}">
+                    Barcode
+                  </label>
+                  {{ form.barcode }}
+                  {% if form.barcode.errors %}
+                  <div class="form-feedback"><div class="form-error">{{ form.barcode.errors }}</div></div>
+                  {% endif %}
+                </div>
+              </div>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label class="form-label" for="{{ form.selling_price.id_for_label }}">
+                    Selling Price (₹) <span>*</span>
+                  </label>
+                  {{ form.selling_price }}
+                  {% if form.selling_price.errors %}
+                  <div class="form-feedback"><div class="form-error">{{ form.selling_price.errors }}</div></div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+            
+            <div class="divider form-divider"></div>
+            
+            <div class="form-actions">
+              <a href="{% url 'quotation:parts_list' %}" class="btn btn-secondary">Cancel</a>
+              <button type="submit" class="btn btn-primary">Save Part</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

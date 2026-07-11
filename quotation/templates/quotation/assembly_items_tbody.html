@@ -1,0 +1,30 @@
+{% load custom_filters %}
+{% for item in items %}
+<tr id="component-row-{{ item.pk }}">
+  <td>
+    <div style="font-weight: 500; color: var(--text);">{{ item.product.name }}</div>
+    <span class="info-secondary" style="font-size: 11px;">Barcode: {{ item.product.barcode|default:"-" }}</span>
+  </td>
+  <td style="text-align: center;">
+    <input type="text" inputmode="numeric" class="td-mono component-qty" data-id="{{ item.pk }}" value="{{ item.quantity_required }}" style="width: 80px; padding: 6px 12px; border: 1px solid var(--border); border-radius: var(--r-sm); text-align: center; background: var(--surface2); color: var(--text); outline: none; font-weight: 600; font-size: 14px;">
+  </td>
+  <td style="text-align: center;">
+    <span class="component-price td-mono" data-id="{{ item.pk }}" contenteditable="true" style="border-bottom: 1px solid var(--accent); padding: 6px 12px; outline: none; background: var(--surface2); border-radius: var(--r-sm); min-width: 80px; display: inline-block; text-align: center; font-weight: 500; cursor: text;">{{ item.selling_price }}</span>
+  </td>
+  <td style="text-align: right; font-weight: 500;" class="td-mono">
+    ₹ {{ item.selling_price|mult:item.quantity_required|currency }}
+  </td>
+  <td style="text-align: right;">
+    <button class="action-btn delete" onclick="removeComponent({{ item.pk }})">
+      <i data-icon="trash"></i>
+    </button>
+  </td>
+</tr>
+{% empty %}
+<tr>
+  <td colspan="5" class="empty-state" style="text-align: center; padding: 60px;">
+    <div style="font-weight: 500; margin-bottom: 4px;">No components added yet</div>
+    <div style="color: var(--text3); font-size: 13px;">Use the search bar above to add constituent parts.</div>
+  </td>
+</tr>
+{% endfor %}

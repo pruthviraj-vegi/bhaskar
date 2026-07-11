@@ -1,0 +1,27 @@
+{% load custom_filters %}
+{% for assembly in page_obj %}
+<tr class="assembly-row">
+  <td class="td-mono">{{ assembly.barcode|default:"-" }}</td>
+  <td>
+    <div style="font-weight: 500; color: var(--text);">{{ assembly.name }}</div>
+  </td>
+  <td>{{ assembly.assembly_items.count }} part{{ assembly.assembly_items.count|pluralize }}</td>
+  <td style="text-align: right;">
+    <div style="display: flex; justify-content: flex-end; gap: 8px;">
+      <a href="{% url 'quotation:assembly_update' assembly.pk %}" class="action-btn" title="Edit">
+        <i data-icon="edit"></i>
+      </a>
+      <a href="{% url 'quotation:assembly_delete' assembly.pk %}" class="action-btn delete" title="Delete">
+        <i data-icon="trash"></i>
+      </a>
+    </div>
+  </td>
+</tr>
+{% empty %}
+<tr class="empty-state-row">
+  <td colspan="4" class="empty-state" style="text-align: center; padding: 40px;">
+    <div style="font-weight: 500; margin-bottom: 4px;">No quotation assemblies found</div>
+    <div style="color: var(--text3); font-size: 13px;">Adjust search filters or create a new assembly.</div>
+  </td>
+</tr>
+{% endfor %}

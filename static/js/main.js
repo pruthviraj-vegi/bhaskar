@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════
-   GarageOS — Workshop Management
+   AeroOS — Workshop Management
    app.js
    ══════════════════════════════════════════ */
 

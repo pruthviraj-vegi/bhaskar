@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% load custom_filters %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ title }}</h1>
+    <p class="page-sub">Manage decoupled drone assembly templates for quotations</p>
+  </div>
+  <div class="breadcrumb">
+    <a href="{% url 'quotation:list' %}">Quotation</a> 
+    <i data-icon="chevronRight"></i> 
+    <span>Assemblies</span>
+  </div>
+</div>
+
+<div class="content">
+  <div class="page active">
+    
+    <!-- Page Actions (Search & Navigation) -->
+    <form class="page-actions" id="assemblies-search-form" onsubmit="return false;">
+      <div class="filters-row">
+        <div class="search-box search-box-wide">
+          <i data-icon="search"></i>
+          <input type="search" id="search" name="search" placeholder="Search assemblies by name or barcode…" autocomplete="off" autofocus>
+        </div>
+      </div>
+      <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+        <a href="{% url 'quotation:list' %}" class="btn" style="background: var(--surface2); color: var(--text);">
+          <i data-icon="chevronLeft"></i> Back to Quotations
+        </a>
+        <a href="{% url 'quotation:assembly_create' %}" class="btn btn-primary">
+          <i data-icon="plus"></i> New Assembly
+        </a>
+      </div>
+    </form>
+
+    <!-- Assemblies Card -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Quotation Assemblies</div>
+          <span class="info-secondary">Search and sort recorded assemblies</span>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table id="assemblies-table">
+          <thead>
+            <tr>
+              <th data-sort="barcode">Barcode</th>
+              <th data-sort="name">Assembly Name</th>
+              <th>Components Count</th>
+              <th style="text-align: right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="assemblies-table-body">
+            <!-- Data loaded via AJAX (fetchData.js) -->
+            <tr>
+              <td colspan="4" class="text-center loading-cell">
+                <div class="loading">
+                  <i class="fas fa-spinner fa-spin"></i> Loading...
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      
+      <!-- Pagination Container -->
+      <div id="assemblies-table_pagination"></div>
+    </div>
+  </div>
+</div>
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+      initTableAjax('assemblies-search-form', 'assemblies-table', '{% url "quotation:assemblies_fetch" %}', {
+          method: 'GET',
+          debounceDelay: 400,
+          placeholder: 'Loading assemblies...'
+      }, true);
+      initTableSorting('assemblies-table');
+  });
+</script>
+{% endblock extra_js %}
+{% endblock %}

@@ -1,0 +1,324 @@
+{% extends "base.html" %}
+{% load custom_filters %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ title }}</h1>
+    <p class="page-sub">Define the assembly details and its constituent parts</p>
+  </div>
+  <div class="breadcrumb">
+    <a href="{% url 'quotation:list' %}">Quotation</a> 
+    <i data-icon="chevronRight"></i> 
+    <a href="{% url 'quotation:assemblies_list' %}">Assemblies</a> 
+    <i data-icon="chevronRight"></i> 
+    <span>{{ title }}</span>
+  </div>
+</div>
+
+<div class="content">
+  <div class="page active">
+    
+    <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 24px; align-items: start; margin-bottom: 24px;">
+      
+      <!-- Left Card: Assembly Settings -->
+      <div style="display: flex; flex-direction: column; gap: 24px;">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Assembly Settings</div>
+              <div class="card-sub">Identity details</div>
+            </div>
+          </div>
+          <div class="card-body form-body" style="padding: 20px;">
+            <form method="post" novalidate id="assembly-form">
+              {% csrf_token %}
+              <div style="display: flex; flex-direction: column; gap: 16px;">
+                <div class="form-group">
+                  <label class="form-label" for="{{ form.name.id_for_label }}">
+                    Assembly Name <span>*</span>
+                  </label>
+                  {{ form.name }}
+                  {% if form.name.errors %}
+                  <div class="form-feedback"><div class="form-error">{{ form.name.errors }}</div></div>
+                  {% endif %}
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="{{ form.barcode.id_for_label }}">
+                    Barcode
+                  </label>
+                  {{ form.barcode }}
+                  {% if form.barcode.errors %}
+                  <div class="form-feedback"><div class="form-error">{{ form.barcode.errors }}</div></div>
+                  {% endif %}
+                </div>
+                
+                <div class="form-actions" style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end;">
+                  <button type="submit" class="btn btn-primary btn-sm">Save Assembly</button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Card: Constituent Parts List with AJAX Search -->
+      {% if assembly %}
+      <div class="card" style="align-self: stretch;">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Constituent Parts / Components</div>
+            <div class="card-sub">{{ items|length }} component{{ items|length|pluralize }} in this assembly</div>
+          </div>
+        </div>
+
+        <!-- Search / Barcode Bar -->
+        <div style="padding: 16px; border-bottom: 1px solid var(--border); position: relative;">
+          <div style="position: relative; display: flex; align-items: center; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 0 12px;">
+            <i data-icon="search" style="color: var(--text3); width: 18px; margin-right: 8px;"></i>
+            <input type="text" id="part-search" class="form-input" style="border: none; background: transparent; padding: 12px 6px; flex:1; font-size: 15px; font-weight: 500;" placeholder="Search Part or Scan Barcode…" autocomplete="off" autofocus>
+          </div>
+          <!-- Dropdown Box -->
+          <div id="search-results" style="display: none; position: absolute; top: 100%; left: 16px; right: 16px; z-index: 100; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-sm); box-shadow: var(--shadow-lg); max-height: 280px; overflow-y: auto;"></div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Part Name</th>
+                <th style="text-align: center; width: 120px;">Qty Required</th>
+                <th style="text-align: center; width: 120px;">Unit Price (₹)</th>
+                <th style="text-align: right; width: 120px;">Total Price</th>
+                <th style="text-align: right; width: 50px;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="components-tbody">
+              {% include "quotation/assembly_items_tbody.html" %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% else %}
+      <div class="card" style="padding: 40px; text-align: center; color: var(--text3); align-self: stretch; display: flex; flex-direction: column; justify-content: center; align-items: center; border: 2px dashed var(--border);">
+        <i data-icon="settings" style="width: 48px; height: 48px; color: var(--border); margin-bottom: 16px;"></i>
+        <h3>Create Assembly first to add constituent parts</h3>
+        <p style="font-size: 13px; margin-top: 8px;">Fill in the Assembly settings on the left to activate the component builder.</p>
+      </div>
+      {% endif %}
+
+    </div>
+  </div>
+</div>
+
+{% if assembly %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+      const partSearch = document.getElementById('part-search');
+      const searchResults = document.getElementById('search-results');
+      const tbody = document.getElementById('components-tbody');
+      const csrftoken = '{{ csrf_token }}';
+
+      let debounceTimer = null;
+      let selectedIndex = -1;
+
+      // 1. Search Box Input and Autocomplete
+      partSearch.addEventListener('input', function() {
+          clearTimeout(debounceTimer);
+          let q = this.value.trim();
+          selectedIndex = -1;
+
+          if (q.length < 2) {
+              searchResults.style.display = 'none';
+              return;
+          }
+
+          searchResults.style.display = 'block';
+          searchResults.innerHTML = '<div style="padding: 12px; text-align: center; color: var(--text3); font-size: 13px;">Searching…</div>';
+
+          debounceTimer = setTimeout(function() {
+              fetch('{% url "quotation:api_quotation_product_search" %}?q=' + encodeURIComponent(q))
+                  .then(r => r.json())
+                  .then(data => {
+                      if (!data.results || data.results.length === 0) {
+                          searchResults.innerHTML = '<div style="padding: 12px; text-align: center; color: var(--text3); font-size: 13px;">No matching parts found.</div>';
+                          return;
+                      }
+
+                      // Only show type === 'product' (constituent parts)
+                      const filtered = data.results.filter(r => r.type === 'product');
+
+                      if (filtered.length === 0) {
+                          searchResults.innerHTML = '<div style="padding: 12px; text-align: center; color: var(--text3); font-size: 13px;">No matching parts found.</div>';
+                          return;
+                      }
+
+                      let html = '';
+                      filtered.forEach(r => {
+                          html += `
+                              <div class="search-item" data-id="${r.id}" style="padding: 10px 14px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='var(--surface2)'" onmouseout="if(!this.classList.contains('active-search')) this.style.background='transparent'" onclick="addComponent(${r.id})">
+                                  <div style="display: flex; justify-content: space-between; font-weight: 500; font-size: 13px; color: var(--text);">
+                                      <span>${r.part_name}</span>
+                                      <span style="color: var(--accent);">₹ ${r.selling_price}</span>
+                                  </div>
+                                  <div style="font-size: 11px; color: var(--text3); margin-top: 2px;">
+                                      ${r.barcode ? 'Barcode: ' + r.barcode : 'Quotation Part'}
+                                  </div>
+                              </div>`;
+                      });
+
+                      searchResults.innerHTML = html;
+                  })
+                  .catch(() => {
+                      searchResults.innerHTML = '<div style="padding: 12px; text-align: center; color: var(--red); font-size: 13px;">Search failed.</div>';
+                  });
+          }, 300);
+      });
+
+      // Keyboard Navigation on Search Results Dropdown
+      partSearch.addEventListener('keydown', function(e) {
+          const items = searchResults.querySelectorAll('.search-item');
+          if (searchResults.style.display === 'block' && items.length > 0) {
+              if (e.key === 'ArrowDown') {
+                  e.preventDefault();
+                  selectedIndex = (selectedIndex + 1) % items.length;
+                  updateActiveItem(items);
+              } else if (e.key === 'ArrowUp') {
+                  e.preventDefault();
+                  selectedIndex = (selectedIndex - 1 + items.length) % items.length;
+                  updateActiveItem(items);
+              } else if (e.key === 'Enter') {
+                  e.preventDefault();
+                  if (selectedIndex >= 0 && selectedIndex < items.length) {
+                      items[selectedIndex].click();
+                  } else if (items.length > 0) {
+                      items[0].click();
+                  }
+              }
+          } else if (e.key === 'Enter') {
+              e.preventDefault();
+          }
+      });
+
+      function updateActiveItem(items) {
+          items.forEach((item, index) => {
+              if (index === selectedIndex) {
+                  item.style.background = 'var(--surface2)';
+                  item.classList.add('active-search');
+                  item.scrollIntoView({ block: 'nearest' });
+              } else {
+                  item.style.background = 'transparent';
+                  item.classList.remove('active-search');
+              }
+          });
+      }
+
+      // Hide search results dropdown when clicking outside
+      document.addEventListener('click', function(e) {
+          if (partSearch && !partSearch.contains(e.target) && !searchResults.contains(e.target)) {
+              searchResults.style.display = 'none';
+          }
+      });
+
+      // 2. AJAX Operations
+      window.addComponent = function(productId) {
+          searchResults.style.display = 'none';
+          partSearch.value = '';
+          partSearch.focus();
+          selectedIndex = -1;
+
+          fetch('/quotation/api/assembly/{{ assembly.pk }}/add-component/', {
+              method: 'POST',
+              headers: {
+                  'X-CSRFToken': csrftoken,
+                  'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ product_id: productId, quantity: 1 })
+          })
+          .then(r => r.json())
+          .then(res => {
+              if (res.success) {
+                  tbody.innerHTML = res.html;
+                  renderIcons();
+              } else {
+                  alert(res.error || "Failed to add component.");
+              }
+          });
+      }
+
+      window.removeComponent = function(itemId) {
+          if (!confirm("Are you sure you want to remove this component?")) return;
+          fetch(`/quotation/api/assembly/item/${itemId}/remove/`, {
+              method: 'POST',
+              headers: {
+                  'X-CSRFToken': csrftoken,
+                  'Content-Type': 'application/json'
+              }
+          })
+          .then(r => r.json())
+          .then(res => {
+              if (res.success) {
+                  tbody.innerHTML = res.html;
+                  renderIcons();
+              } else {
+                  alert(res.error || "Failed to remove component.");
+              }
+          });
+      }
+
+      function updateComponent(itemId, data) {
+          fetch(`/quotation/api/assembly/item/${itemId}/update/`, {
+              method: 'POST',
+              headers: {
+                  'X-CSRFToken': csrftoken,
+                  'Content-Type': 'application/json'
+              },
+              body: JSON.stringify(data)
+          })
+          .then(r => r.json())
+          .then(res => {
+              if (res.success) {
+                  tbody.innerHTML = res.html;
+                  renderIcons();
+              } else {
+                  alert(res.error || "Failed to update component.");
+              }
+          });
+      }
+
+      // 3. Inline Editable Listeners (Event Delegation)
+      tbody.addEventListener('change', function(e) {
+          if (e.target.classList.contains('component-qty')) {
+              const itemId = e.target.getAttribute('data-id');
+              const qty = parseFloat(e.target.value) || 1;
+              updateComponent(itemId, { quantity: qty });
+          }
+      });
+
+      tbody.addEventListener('keypress', function(e) {
+          if (e.target.classList.contains('component-qty') && e.key === 'Enter') {
+              e.target.blur();
+          }
+      });
+
+      tbody.addEventListener('blur', function(e) {
+          if (e.target.classList.contains('component-price')) {
+              const itemId = e.target.getAttribute('data-id');
+              const price = parseFloat(e.target.innerText) || 0;
+              updateComponent(itemId, { price: price });
+          }
+      }, true); // capturing phase for blur
+
+      tbody.addEventListener('keypress', function(e) {
+          if (e.target.classList.contains('component-price') && e.key === 'Enter') {
+              e.preventDefault();
+              e.target.blur();
+          }
+      });
+  });
+</script>
+{% endif %}
+
+{% endblock %}

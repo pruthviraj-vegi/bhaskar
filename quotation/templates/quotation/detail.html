@@ -29,6 +29,18 @@
             </div>
           </div>
 
+          <!-- Product & Assembly Search Section -->
+          <div style="padding: 0 16px 16px 16px; border-bottom: 1px solid var(--border); position: relative;">
+            <div style="position: relative; display: flex; align-items: center; background: var(--surface); border: 2px solid var(--accent); border-radius: var(--r-sm); padding: 0 12px; box-shadow: 0 0 0 3px var(--accent-dim);">
+              <i data-icon="search" style="color: var(--text3); width: 20px; margin-right: 8px;"></i>
+              <input type="text" id="pos-barcode" class="form-input" style="border: none; background: transparent; padding: 12px; flex:1; font-size: 16px; font-weight: 500;" placeholder="Search Product or Scan Barcode…" autocomplete="off" autofocus>
+            </div>
+            
+            <!-- Autocomplete Dropdown Box -->
+            <div id="pos-search-results" style="display: none; position: absolute; top: 100%; left: 16px; right: 16px; z-index: 50; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-sm); box-shadow: var(--shadow-lg); max-height: 400px; overflow-y: auto;">
+            </div>
+          </div>
+
           <div class="table-wrap" style="flex: 1;">
             <table>
               <thead>
@@ -163,6 +175,178 @@ function refreshDOM(res) {
     if (typeof renderIcons === 'function') renderIcons();
 }
 
+// Search & Autocomplete Logic
+const barcodeInput = document.getElementById('pos-barcode');
+const resultsBox = document.getElementById('pos-search-results');
+let debounceTimer = null;
+let selectedIndex = -1;
+
+function getAddMode() {
+    return 'parts';
+}
+
+if (barcodeInput) {
+    // 1. Text Search (Autocomplete Dropdown)
+    barcodeInput.addEventListener('input', function() {
+        clearTimeout(debounceTimer);
+        let q = this.value.trim();
+        selectedIndex = -1; // Reset selection
+
+        if (q.length < 2) {
+            resultsBox.style.display = 'none';
+            return;
+        }
+
+        resultsBox.style.display = 'block';
+        resultsBox.innerHTML = '<div style="padding: 16px; text-align: center; color: var(--text3);">Searching…</div>';
+
+        debounceTimer = setTimeout(function() {
+            fetch('{% url "quotation:api_quotation_product_search" %}?q=' + encodeURIComponent(q))
+                .then(r => r.json())
+                .then(data => {
+                    if (!data.results || data.results.length === 0) {
+                        resultsBox.innerHTML = `
+                            <div style="padding: 16px; text-align: center; color: var(--text3);">
+                                No products found.
+                            </div>`;
+                        return;
+                    }
+
+                    let html = '';
+                    data.results.forEach(r => {
+                        const isAssembly = r.type === 'assembly';
+                        const stockColor = r.stock > 0 ? 'var(--green)' : 'var(--red)';
+                        const badge = isAssembly ? '<span class="badge" style="background: var(--accent); color: #fff;">Drone</span>' : '<span style="font-weight: 600; font-size: 13px; color: ' + stockColor + ';">Available: ' + r.stock + '</span>';
+                        const priceDisplay = isAssembly
+                            ? '₹ ' + Number(r.selling_price).toLocaleString('en-IN', {minimumFractionDigits: 2})
+                            : '<span class="badge" style="background: var(--surface2); color: var(--text2);">₹ ' + r.selling_price + '</span>';
+                        html += `
+                            <div class="search-item" data-id="${r.id}" data-type="${r.type}" style="padding: 12px 16px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='var(--surface2)'" onmouseout="if(!this.classList.contains('active-search')) this.style.background='transparent'" onclick="addInventoryItem(${r.id}, '${r.type}')">
+                                <div style="display: flex; justify-content: space-between; align-items:center; margin-bottom: 4px;">
+                                    <strong style="color: var(--text); font-size: 14px;">${r.part_name}</strong>
+                                    ${badge}
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items:center; font-size: 12px; color: var(--text3);">
+                                    <span>${r.barcode ? r.barcode : r.company_name}</span>
+                                    ${priceDisplay}
+                                </div>
+                                ${isAssembly ? '<div style="font-size: 11px; color: var(--text3); margin-top: 4px;">' + r.item_count + ' items · Qty ' + r.total_qty + ' · ₹ ' + Number(r.total_price).toLocaleString('en-IN', {minimumFractionDigits: 2}) + '</div>' : ''}
+                            </div>`;
+                    });
+
+                    resultsBox.innerHTML = html;
+                })
+                .catch(() => {
+                    resultsBox.innerHTML = '<div style="padding:16px;text-align:center;color:var(--red);">Search failed.</div>';
+                });
+        }, 300);
+    });
+
+    // 2. Keyboard Navigation & Scanner (Enter Key)
+    barcodeInput.addEventListener('keydown', function(e) {
+        const items = resultsBox.querySelectorAll('.search-item');
+        
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (items.length > 0) {
+                selectedIndex = (selectedIndex < items.length - 1) ? selectedIndex + 1 : 0;
+                updateSearchHighlight(items);
+            }
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (items.length > 0) {
+                selectedIndex = (selectedIndex > 0) ? selectedIndex - 1 : items.length - 1;
+                updateSearchHighlight(items);
+            }
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            
+            // If item is highlighted in dropdown, add it
+            if (selectedIndex > -1 && items.length > 0) {
+                const selectedItem = items[selectedIndex];
+                const selectedId = selectedItem.getAttribute('data-id');
+                const selectedType = selectedItem.getAttribute('data-type');
+                if (selectedId) addInventoryItem(selectedId, selectedType);
+                return;
+            }
+            
+            // Otherwise submit barcode scan
+            let bc = this.value.trim();
+            if(!bc) return;
+            
+            resultsBox.style.display = 'none';
+            this.disabled = true;
+            
+            fetch('{% url "quotation:api_add_by_barcode" session.pk %}', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrftoken, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ barcode: bc, add_mode: getAddMode() })
+            })
+            .then(r => r.json())
+            .then(res => {
+                this.disabled = false;
+                this.value = '';
+                this.focus();
+                if (res.success) {
+                    refreshDOM(res);
+                } else {
+                    alert("Error: " + res.error);
+                }
+            })
+            .catch(() => {
+                this.disabled = false;
+                this.value = '';
+                this.focus();
+                alert("Network error.");
+            });
+        }
+    });
+}
+
+function updateSearchHighlight(items) {
+    items.forEach((item, index) => {
+        if (index === selectedIndex) {
+            item.style.background = 'var(--surface2)';
+            item.classList.add('active-search');
+        } else {
+            item.style.background = 'transparent';
+            item.classList.remove('active-search');
+        }
+    });
+}
+
+// Hide dropdown if clicked outside
+document.addEventListener('click', function(e) {
+    if (barcodeInput && resultsBox && !barcodeInput.contains(e.target) && !resultsBox.contains(e.target)) {
+        resultsBox.style.display = 'none';
+    }
+});
+
+// Add Product or Assembly from search
+function addInventoryItem(productId, itemType) {
+    if (resultsBox) resultsBox.style.display = 'none';
+    if (barcodeInput) {
+        barcodeInput.value = '';
+        barcodeInput.focus();
+        selectedIndex = -1;
+    }
+
+    fetch('{% url "quotation:api_add_inventory_item" session.pk %}', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrftoken, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ product_id: productId, type: itemType, quantity: 1, add_mode: getAddMode() })
+    })
+    .then(r => r.json())
+    .then(res => {
+        if (res.success) {
+            refreshDOM(res);
+        } else {
+            alert("Error: " + res.error);
+        }
+    });
+}
+
+// Manual Add
 function addItem() {
     const nameEl = document.getElementById('new-name');
     const priceEl = document.getElementById('new-price');
@@ -246,7 +430,11 @@ document.getElementById('new-qty').addEventListener('keydown', function(e) {
 });
 
 document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('new-name').focus();
+    if (barcodeInput) {
+        barcodeInput.focus();
+    } else {
+        document.getElementById('new-name').focus();
+    }
 });
 </script>
 {% endblock extra_js %}

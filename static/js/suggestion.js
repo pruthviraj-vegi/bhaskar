@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════
-   GarageOS — Suggestion / Autocomplete
+   AeroOS — Suggestion / Autocomplete
    suggestion.js
    ══════════════════════════════════════════ */
 

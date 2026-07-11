@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% load custom_filters %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ title }}</h1>
+    <p class="page-sub">Manage decoupled parts for quotation pre-planning</p>
+  </div>
+  <div class="breadcrumb">
+    <a href="{% url 'quotation:list' %}">Quotation</a> 
+    <i data-icon="chevronRight"></i> 
+    <span>Parts</span>
+  </div>
+</div>
+
+<div class="content">
+  <div class="page active">
+    
+    <!-- Page Actions (Search & Navigation) -->
+    <form class="page-actions" id="parts-search-form" onsubmit="return false;">
+      <div class="filters-row">
+        <div class="search-box search-box-wide">
+          <i data-icon="search"></i>
+          <input type="search" id="search" name="search" placeholder="Search parts by name or barcode…" autocomplete="off" autofocus>
+        </div>
+      </div>
+      <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+        <a href="{% url 'quotation:list' %}" class="btn" style="background: var(--surface2); color: var(--text);">
+          <i data-icon="chevronLeft"></i> Back to Quotations
+        </a>
+        <a href="{% url 'quotation:part_create' %}" class="btn btn-primary">
+          <i data-icon="plus"></i> New Part
+        </a>
+      </div>
+    </form>
+
+    <!-- Parts Card -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Quotation Parts</div>
+          <span class="info-secondary">Search and sort recorded parts</span>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table id="parts-table">
+          <thead>
+            <tr>
+              <th data-sort="barcode">Barcode</th>
+              <th data-sort="name">Name</th>
+              <th data-sort="selling_price" style="text-align: right;">Selling Price</th>
+              <th style="text-align: right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="parts-table-body">
+            <!-- Data loaded via AJAX (fetchData.js) -->
+            <tr>
+              <td colspan="4" class="text-center loading-cell">
+                <div class="loading">
+                  <i class="fas fa-spinner fa-spin"></i> Loading...
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      
+      <!-- Pagination Container -->
+      <div id="parts-table_pagination"></div>
+    </div>
+  </div>
+</div>
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+      initTableAjax('parts-search-form', 'parts-table', '{% url "quotation:parts_fetch" %}', {
+          method: 'GET',
+          debounceDelay: 400,
+          placeholder: 'Loading parts...'
+      }, true);
+      initTableSorting('parts-table');
+  });
+</script>
+{% endblock extra_js %}
+{% endblock %}

@@ -62,6 +62,8 @@
         {% if perms.quotation.add_quotationsecession %}
         <a href="{% url 'quotation:create' %}" class="nav-sub-item">New Quotation</a>
         {% endif %}
+        <a href="{% url 'quotation:parts_list' %}" class="nav-sub-item">Quotation Parts</a>
+        <a href="{% url 'quotation:assemblies_list' %}" class="nav-sub-item">Quotation Assemblies</a>
       </div>
     </div>
     {% endif %}

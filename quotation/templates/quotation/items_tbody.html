@@ -1,12 +1,14 @@
 {% load custom_filters %}
 {% for item in items %}
-<tr id="q-row-{{ item.pk }}">
+<tr id="q-row-{{ item.pk }}" {% if item.parent_id %}style="background: var(--surface2); opacity: 0.95;"{% endif %}>
   <td style="color: var(--text3);">{{ forloop.counter }}</td>
   <td>
-    <span class="item-name" data-id="{{ item.pk }}" contenteditable="true" style="border-bottom: 1px solid transparent; padding: 2px 4px; outline: none; font-weight: 500; cursor: text;">{{ item.name }}</span>
+    <span class="item-name" data-id="{{ item.pk }}" contenteditable="true" style="border-bottom: 1px solid transparent; padding: 2px 4px; outline: none; font-weight: 500; cursor: text; {% if item.parent_id %}padding-left: 16px;{% endif %}">
+      {% if item.parent_id %}<span style="color: var(--accent); margin-right: 6px; font-weight: 700;">└─</span>{% endif %}{{ item.name }}
+    </span>
   </td>
   <td style="text-align: center;">
-    <span class="item-price" data-id="{{ item.pk }}" contenteditable="true" style="border-bottom: 1px solid var(--accent); padding: 6px 12px; outline: none; background: var(--surface2); border-radius: var(--r-sm); min-width: 80px; display: inline-block; text-align: center; font-weight: 500; cursor: text;" class="td-mono">{{ item.price|currency }}</span>
+    <span class="item-price" data-id="{{ item.pk }}" contenteditable="{% if item.is_assembly and item.components.all %}false{% else %}true{% endif %}" style="border-bottom: 1px solid var(--accent); padding: 6px 12px; outline: none; background: var(--surface2); border-radius: var(--r-sm); min-width: 80px; display: inline-block; text-align: center; font-weight: 500; cursor: text; {% if item.is_assembly and item.components.all %}opacity: 0.65; cursor: not-allowed; border-bottom-color: var(--border);{% endif %}" class="td-mono">{{ item.price|currency }}</span>
   </td>
   <td style="text-align: center;">
     <input type="text" inputmode="numeric" id="qty-{{ item.pk }}" class="td-mono item-qty" data-id="{{ item.pk }}" value="{{ item.quantity }}" style="width: 80px; padding: 6px 12px; border: 1px solid var(--border); border-radius: var(--r-sm); text-align: center; background: var(--surface2); color: var(--text); outline: none; font-weight: 600; font-size: 14px;">
